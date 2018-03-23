@@ -10,9 +10,17 @@ struct image {
 	image() : image(0, 0, 0)
 	{}
 
-	std::size_t size() const
+	std::size_t pixels() const
 	{
 		return width() * height();
+	}
+	std::size_t size() const
+	{
+		return pixels() * channels();
+	}
+	std::size_t bytes() const
+	{
+		return size() * sizeof(T);
 	}
 	std::size_t width() const
 	{
@@ -34,20 +42,29 @@ struct image {
 
 	T *data(std::size_t idx = 0)
 	{
-		return _data.data() + idx * nc;
+		return _data.data() + idx;
 	}
 	const T *data(std::size_t idx = 0) const
 	{
-		return _data.data() + idx * nc;
+		return _data.data() + idx;
 	}
 
-	T *data(std::size_t x, std::size_t y, std::size_t c = 0)
+	T *data(std::size_t idx, std::size_t c)
 	{
-		return data(y * w + x) + c;
+		return data(idx * nc + c);
 	}
-	const T *data(std::size_t x, std::size_t y, std::size_t c = 0) const
+	const T *data(std::size_t idx, std::size_t c) const
 	{
-		return data(y * w + x) + c;
+		return data(idx * nc + c);
+	}
+
+	T *data2d(std::size_t x, std::size_t y, std::size_t c = 0)
+	{
+		return data(y * w * nc + x * nc + c);
+	}
+	const T *data2d(std::size_t x, std::size_t y, std::size_t c = 0) const
+	{
+		return data(y * w * nc + x * nc + c);
 	}
 
 	T &operator[](std::size_t idx)
@@ -59,13 +76,22 @@ struct image {
 		return *data(idx);
 	}
 
+	T &at(std::size_t idx, std::size_t c = 0)
+	{
+		return *data(idx, c);
+	}
+	const T &at(std::size_t idx, std::size_t c = 0) const
+	{
+		return *data(idx, c);
+	}
+
 	T &operator()(std::size_t x, std::size_t y = 0, std::size_t c = 0)
 	{
-		return *data(x, y, c);
+		return *data2d(x, y, c);
 	}
 	const T &operator()(std::size_t x, std::size_t y = 0, std::size_t c = 0) const
 	{
-		return *data(x, y, c);
+		return *data2d(x, y, c);
 	}
 
 	template <typename U = float>
@@ -100,9 +126,11 @@ namespace image_io {
 image<unsigned char> load_png(const char *filename);
 image<unsigned char> load_jpeg(const char *filename);
 image<float> load_exr(const char *filename);
+template <typename T = unsigned char> image<T> load_bpm(const char *filename);
 
 void save_png(const image<unsigned char> &image, const char *filename);
 void save_jpeg(const image<unsigned char> &image, const char *filename, int quality = 80);
 void save_exr(const image<float> &image, const char *filename);
+template <typename T = unsigned char> void save_bpm(const image<T> &image, const char *filename);
 
 }

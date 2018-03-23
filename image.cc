@@ -6,6 +6,11 @@
 #include <jpeglib.h>
 #include <setjmp.h>
 #include <stdexcept>
+#include <type_traits>
+#include <fstream>
+#include <string>
+#include <bitset>
+#include <limits>
 
 // openexr
 #include "ImfRgbaFile.h" // TODO
@@ -57,7 +62,7 @@ image<unsigned char> load_png(const char *filename)
 
 	std::vector<png_bytep> row_pointers(image.height());
 	for (std::size_t y = 0; y < image.height(); ++y) {
-		row_pointers[y] = (png_byte*)image.data(0, y);
+		row_pointers[y] = (png_byte*)image.data2d(0, y);
 	}
 	png_read_image(png, row_pointers.data());
 
@@ -106,7 +111,7 @@ void save_png(const image<unsigned char> &image, const char *filename)
 
 	std::vector<png_bytep> row_pointers(image.height());
 	for (std::size_t y = 0; y < image.height(); ++y) {
-		row_pointers[y] = (png_byte*)image.data(0, y);
+		row_pointers[y] = (png_byte*)image.data2d(0, y);
 	}
 
 	png_write_image(png, row_pointers.data());
@@ -181,7 +186,7 @@ void save_jpeg(const image<unsigned char> &image, const char *filename, int qual
 	jpeg_start_compress(&cinfo, TRUE);
 
 	while (cinfo.next_scanline < cinfo.image_height) {
-		JSAMPROW row_pointer = (JSAMPROW)image.data(0, cinfo.next_scanline);
+		JSAMPROW row_pointer = (JSAMPROW)image.data2d(0, cinfo.next_scanline);
 		jpeg_write_scanlines(&cinfo, &row_pointer, 1);
 	}
 
@@ -207,7 +212,6 @@ image<float> load_exr(const char *filename)
 		case 'Y': channels |= Y; break;
 		default: throw std::runtime_error("Unsupported channel");
 		}
-		if (it.channel().type != Imf::HALF) throw std::runtime_error("Unsupported channel type");
 	}
 	std::size_t nc = 0;
 	if (channels & R && channels & G && channels & B && channels & A) nc = 4;
@@ -232,10 +236,6 @@ image<float> load_exr(const char *filename)
 
 void save_exr(const image<float> &image, const char *filename)
 {
-	Imf::RgbaChannels channels;
-	std::vector<Imf::Rgba> data(image.size());
-	Imf::Rgba rgba;
-
 	if (image.channels() < 1 || image.channels() > 4) throw std::runtime_error("Invalid number of channels");
 
 	Imf::FrameBuffer fb;
@@ -250,5 +250,101 @@ void save_exr(const image<float> &image, const char *filename)
 	outFile.setFrameBuffer(fb);
 	outFile.writePixels(image.height());
 }
+
+template <typename T>
+image<T> load_bpm(const char *filename)
+{
+	std::ifstream is(filename);
+	std::string magic;
+	is >> magic;
+	std::size_t channels;
+	enum Header { FLOAT = 1, BIT = 2, ASCII = 4, RGB = 8 };
+	int header = 0;
+	if (magic == "Pf") {
+		header |= FLOAT;
+	} else if (magic == "PF") {
+		header |= FLOAT;
+		header |= RGB;
+	} else if (magic == "P1") {
+		header |= BIT;
+		header |= ASCII;
+	} else if (magic == "P2") {
+		header |= ASCII;
+	} else if (magic == "P3") {
+		header |= RGB;
+		header |= ASCII;
+	} else if (magic == "P4") {
+		header |= BIT;
+	} else if (magic == "P5") {
+	} else if (magic == "P6") {
+		header |= RGB;
+	}
+
+	if (!!(header & FLOAT) != std::is_floating_point<T>::value) throw std::runtime_error("Cannot load a floating point file to a char image and vice versa");
+
+	float scale = 1, f_val;
+	std::size_t i_val, w, h;
+	is >> w >> h;
+	if (!(header & BIT)) is >> scale;
+	scale = 1. / scale;
+	if (!(header & FLOAT)) scale *= 255;
+
+	image<T> image(w, h, header & RGB ? 3 : 1);
+
+	is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (!(header & ASCII)) {
+		if (header & BIT) {
+			std::vector<std::bitset<8>> row((image.width() + 7) / 8);
+			for (std::size_t y = 0; y < image.height(); ++y) {
+				is.read((char*)row.data(), row.size());
+				for (std::size_t x = 0; x < image.width(); ++x) {
+					image(x, y) = !row[x >> 3][7 - (x & 7)];
+				}
+			}
+		} else {
+			is.read((char*)image.data(), image.bytes());
+		}
+	} else if (header & FLOAT) {
+		for (std::size_t i = 0; i < image.size(); ++i) {
+			is >> f_val;
+			image[i] = f_val;
+		}
+	} else {
+		for (std::size_t i = 0; i < image.size(); ++i) {
+			is >> i_val;
+			image[i] = header & BIT ? !i_val : i_val;
+		}
+	}
+
+	if (!(header & FLOAT)) {
+		for (std::size_t i = 0; i < image.size(); ++i) {
+			image[i] *= scale;
+		}
+	}
+
+	return image;
+}
+
+template image<unsigned char> load_bpm<unsigned char>(const char *filename);
+template image<float> load_bpm<float>(const char *filename);
+
+template <typename T>
+void save_bpm(const image<T> &image, const char *filename)
+{
+	std::ofstream os(filename, std::ios_base::binary);
+	if (std::is_floating_point<T>::value && image.channels() == 1) os << "Pf\n";
+	else if (std::is_floating_point<T>::value && image.channels() == 3) os << "PF\n";
+	else if (image.channels() == 1) os << "P5\n";
+	else if (image.channels() == 3) os << "P6\n";
+	else throw std::runtime_error("Unsupported number of channels");
+
+	os << image.width() << " " << image.height() << "\n";
+	if (std::is_floating_point<T>::value) os << "1\n";
+	else os << "255\n";
+	os.write((const char*)image.data(), image.bytes());
+}
+
+template void save_bpm<unsigned char>(const image<unsigned char> &image, const char *filename);
+template void save_bpm<float>(const image<float> &image, const char *filename);
 
 }
