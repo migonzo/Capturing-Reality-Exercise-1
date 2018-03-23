@@ -7,6 +7,14 @@
 #include <setjmp.h>
 #include <stdexcept>
 
+// openexr
+#include "ImfRgbaFile.h" // TODO
+#include "ImfOutputFile.h"
+#include "ImfInputFile.h"
+#include "ImfChannelList.h"
+#include "ImfMatrixAttribute.h"
+#include "ImfArray.h"
+
 namespace image_io {
 
 image<unsigned char> load_png(const char *filename)
@@ -180,6 +188,67 @@ void save_jpeg(const image<unsigned char> &image, const char *filename, int qual
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
 	fclose(fp);
+}
+
+const char *exr_channel_names[4][4] = { { "Y", "", "", "" }, { "Y", "A", "", "" }, { "R", "G", "B", "" }, { "R", "G", "B", "A" } };
+
+image<float> load_exr(const char *filename)
+{
+	Imf::InputFile file(filename);
+	const Imf::Header &header = file.header();
+	enum Channels { R = 1, G = 2, B = 4, A = 8, Y = 16 };
+	int channels = 0;
+	for (Imf::ChannelList::ConstIterator it = header.channels().begin(); it != header.channels().end(); ++it) {
+		switch (it.name()[0]) {
+		case 'R': channels |= R; break;
+		case 'G': channels |= G; break;
+		case 'B': channels |= B; break;
+		case 'A': channels |= A; break;
+		case 'Y': channels |= Y; break;
+		default: throw std::runtime_error("Unsupported channel");
+		}
+		if (it.channel().type != Imf::HALF) throw std::runtime_error("Unsupported channel type");
+	}
+	std::size_t nc = 0;
+	if (channels & R && channels & G && channels & B && channels & A) nc = 4;
+	else if (channels & R && channels & G && channels & B) nc = 3;
+	else if (channels & Y && channels & A) nc = 2;
+	else if (channels & Y) nc = 1;
+	else throw std::runtime_error("Unsupported channels");
+
+	Imath::Box2i dw = header.dataWindow();
+	image<float> image(dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1, nc);
+
+	Imf::FrameBuffer fb;
+	for (std::size_t c = 0; c < nc; ++c) {
+		fb.insert(exr_channel_names[nc][c], Imf::Slice(Imf::FLOAT, (char*)((char*)image.data() + sizeof(float) * c), sizeof(float) * nc, sizeof(float) * image.width() * nc, 1, 1, 0.0));
+	}
+
+	file.setFrameBuffer(fb);
+	file.readPixels(dw.min.y, dw.max.y);
+
+	return image;
+}
+
+void save_exr(const image<float> &image, const char *filename)
+{
+	Imf::RgbaChannels channels;
+	std::vector<Imf::Rgba> data(image.size());
+	Imf::Rgba rgba;
+
+	if (image.channels() < 1 || image.channels() > 4) throw std::runtime_error("Invalid number of channels");
+
+	Imf::FrameBuffer fb;
+	Imf::Header header(image.width(), image.height());
+	std::size_t nc = image.channels();
+	for (std::size_t c = 0; c < nc; ++c) {
+		fb.insert(exr_channel_names[nc][c], Imf::Slice(Imf::FLOAT, (char*)((char*)image.data() + sizeof(float) * c), sizeof(float) * nc, sizeof(float) * image.width() * nc, 1, 1, 0.0));
+		header.channels().insert(exr_channel_names[nc][c], Imf::Channel(Imf::FLOAT));
+	}
+
+	Imf::OutputFile outFile(filename, header);
+	outFile.setFrameBuffer(fb);
+	outFile.writePixels(image.height());
 }
 
 }

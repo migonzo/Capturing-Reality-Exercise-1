@@ -10,6 +10,10 @@ struct image {
 	image() : image(0, 0, 0)
 	{}
 
+	std::size_t size() const
+	{
+		return width() * height();
+	}
 	std::size_t width() const
 	{
 		return w;
@@ -30,20 +34,20 @@ struct image {
 
 	T *data(std::size_t idx = 0)
 	{
-		return _data.data() + idx;
+		return _data.data() + idx * nc;
 	}
 	const T *data(std::size_t idx = 0) const
 	{
-		return _data.data() + idx;
+		return _data.data() + idx * nc;
 	}
 
 	T *data(std::size_t x, std::size_t y, std::size_t c = 0)
 	{
-		return data(y * w * nc + x * nc + c);
+		return data(y * w + x) + c;
 	}
 	const T *data(std::size_t x, std::size_t y, std::size_t c = 0) const
 	{
-		return data(y * w * nc + x * nc + c);
+		return data(y * w + x) + c;
 	}
 
 	T &operator[](std::size_t idx)
