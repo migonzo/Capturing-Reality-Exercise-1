@@ -1,48 +1,43 @@
 #include "image.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <png.h>
-#include <jpeglib.h>
-#include <setjmp.h>
 #include <stdexcept>
 #include <type_traits>
 #include <fstream>
 #include <string>
 #include <bitset>
 #include <limits>
+#include <cstdio>
 
-// openexr
-#include "ImfRgbaFile.h" // TODO
-#include "ImfOutputFile.h"
-#include "ImfInputFile.h"
-#include "ImfChannelList.h"
-#include "ImfMatrixAttribute.h"
-#include "ImfArray.h"
+#include <png.h>
+#include <jpeglib.h>
+#include <ImfOutputFile.h>
+#include <ImfInputFile.h>
+#include <ImfChannelList.h>
+#include <ImfArray.h>
 
 namespace image_io {
 
 image<unsigned char> load_png(const char *filename)
 {
-	FILE *fp = fopen(filename, "rb");
+	FILE *fp = std::fopen(filename, "rb");
 	if (!fp) throw std::runtime_error("Cannot open PNG file");
 
-	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	if (!png) {
-		fclose(fp);
+		std::fclose(fp);
 		throw std::runtime_error("Could not read PNG version");
 	}
 
 	png_infop info = png_create_info_struct(png);
 	if (!info) {
-		png_destroy_read_struct(&png, &info, NULL);
-		fclose(fp);
+		png_destroy_read_struct(&png, &info, nullptr);
+		std::fclose(fp);
 		throw std::runtime_error("Could not read PNG info");
 	}
 
 	if (setjmp(png_jmpbuf(png))) {
-		png_destroy_read_struct(&png, &info, NULL);
-		fclose(fp);
+		png_destroy_read_struct(&png, &info, nullptr);
+		std::fclose(fp);
 		throw std::runtime_error("Internal libpng error");
 	}
 
@@ -66,33 +61,33 @@ image<unsigned char> load_png(const char *filename)
 	}
 	png_read_image(png, row_pointers.data());
 
-	png_destroy_read_struct(&png, &info, NULL);
-	fclose(fp);
+	png_destroy_read_struct(&png, &info, nullptr);
+	std::fclose(fp);
 
 	return image;
 }
 
 void save_png(const image<unsigned char> &image, const char *filename)
 {
-	FILE *fp = fopen(filename, "wb");
+	FILE *fp = std::fopen(filename, "wb");
 	if (!fp) throw std::runtime_error("Cannot open PNG file");
 
-	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	if (!png) {
-		fclose(fp);
+		std::fclose(fp);
 		throw std::runtime_error("Cannot create PNG write struct");
 	}
 
 	png_infop info = png_create_info_struct(png);
 	if (!info) {
 		png_destroy_write_struct(&png, &info);
-		fclose(fp);
+		std::fclose(fp);
 		throw std::runtime_error("Cannot create PNG info");
 	}
 
 	if (setjmp(png_jmpbuf(png))) {
 		png_destroy_write_struct(&png, &info);
-		fclose(fp);
+		std::fclose(fp);
 		throw std::runtime_error("Internal libpng error");
 	}
 
@@ -115,10 +110,10 @@ void save_png(const image<unsigned char> &image, const char *filename)
 	}
 
 	png_write_image(png, row_pointers.data());
-	png_write_end(png, NULL);
+	png_write_end(png, nullptr);
 
 	png_destroy_write_struct(&png, &info);
-	fclose(fp);
+	std::fclose(fp);
 }
 
 void jpg_error_handler(j_common_ptr)
@@ -132,7 +127,7 @@ void jpg_message_handler(j_common_ptr, int msg_level)
 
 image<unsigned char> load_jpeg(const char *filename)
 {
-	FILE *fp = fopen(filename, "rb");
+	FILE *fp = std::fopen(filename, "rb");
 	if (!fp) throw std::runtime_error("Cannot open JPEG file");
 
 	jpeg_decompress_struct cinfo;
@@ -157,7 +152,7 @@ image<unsigned char> load_jpeg(const char *filename)
 
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
-	fclose(fp);
+	std::fclose(fp);
 
 	return image;
 }
@@ -192,7 +187,7 @@ void save_jpeg(const image<unsigned char> &image, const char *filename, int qual
 
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
-	fclose(fp);
+	std::fclose(fp);
 }
 
 const char *exr_channel_names[4][4] = { { "Y", "", "", "" }, { "Y", "A", "", "" }, { "R", "G", "B", "" }, { "R", "G", "B", "A" } };
