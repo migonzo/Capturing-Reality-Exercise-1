@@ -113,7 +113,7 @@ struct image {
 	template <typename U = float, typename V>
 	U lin_at(const V &v, std::size_t c = 0) const
 	{
-		return bilin(v[0], v[1], c);
+		return lin_at(v[0], v[1], c);
 	}
 
 private:

@@ -28,7 +28,7 @@ if (OPENEXR_FOUND)
 add_definitions(-DWITH_EXR)
 endif()
 
-include_directories(${PNG_INCLUDE_DIRS} ${JPEG_INCLUDE_DIR} ${OPENEXR_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
+include_directories(${PNG_INCLUDE_DIRS} ${JPEG_INCLUDE_DIR} ${OPENEXR_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} "${CMAKE_SOURCE_DIR}/include")
 
-add_executable(test image_io.cc test.cc)
-target_link_libraries(test ${PNG_LIBRARIES} ${JPEG_LIBRARIES} ${OPENEXR_LIBRARIES})
+add_executable(example src/image_io.cc example.cc)
+target_link_libraries(example ${PNG_LIBRARIES} ${JPEG_LIBRARIES} ${OPENEXR_LIBRARIES})
