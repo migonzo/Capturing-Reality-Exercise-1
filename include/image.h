@@ -10,18 +10,6 @@ struct image {
 	image() : image(0, 0, 0)
 	{}
 
-	std::size_t pixels() const
-	{
-		return width() * height();
-	}
-	std::size_t size() const
-	{
-		return pixels() * channels();
-	}
-	std::size_t bytes() const
-	{
-		return size() * sizeof(T);
-	}
 	std::size_t width() const
 	{
 		return w;
@@ -33,6 +21,18 @@ struct image {
 	std::size_t channels() const
 	{
 		return nc;
+	}
+	std::size_t pixels() const
+	{
+		return width() * height();
+	}
+	std::size_t size() const
+	{
+		return pixels() * channels();
+	}
+	std::size_t bytes() const
+	{
+		return size() * sizeof(T);
 	}
 
 	void resize(std::size_t width, std::size_t height = 1, std::size_t channels = 1)
@@ -95,7 +95,7 @@ struct image {
 	}
 
 	template <typename U = float>
-	U bilin(float x, float y, std::size_t c = 0) const
+	U lin_at(float x, float y, std::size_t c = 0) const
 	{
 		std::size_t xl = x, yl = y;
 		std::size_t xu = xl + 1, yu = yl + 1;
@@ -111,7 +111,7 @@ struct image {
 		return l0 * (1.f - ay) + l1 * ay;
 	}
 	template <typename U = float, typename V>
-	U bilin(const V &v, std::size_t c = 0) const
+	U lin_at(const V &v, std::size_t c = 0) const
 	{
 		return bilin(v[0], v[1], c);
 	}
@@ -123,14 +123,25 @@ private:
 
 namespace image_io {
 
+#ifdef WITH_PNG
 image<unsigned char> load_png(const char *filename);
-image<unsigned char> load_jpeg(const char *filename);
-image<float> load_exr(const char *filename);
-template <typename T = unsigned char> image<T> load_bpm(const char *filename);
-
 void save_png(const image<unsigned char> &image, const char *filename);
+#endif
+
+#ifdef WITH_JPEG
+image<unsigned char> load_jpeg(const char *filename);
 void save_jpeg(const image<unsigned char> &image, const char *filename, int quality = 80);
+#endif
+
+#ifdef WITH_EXR
+image<float> load_exr(const char *filename);
 void save_exr(const image<float> &image, const char *filename);
+#endif
+
+template <typename T = unsigned char> image<T> load_bpm(const char *filename);
 template <typename T = unsigned char> void save_bpm(const image<T> &image, const char *filename);
+
+template <typename T = unsigned char> image<T> load(const char *filename);
+template <typename T = unsigned char> void save(const image<T> &image, const char *filename);
 
 }

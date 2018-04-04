@@ -8,15 +8,22 @@
 #include <limits>
 #include <cstdio>
 
+#ifdef WITH_PNG
 #include <png.h>
+#endif
+#ifdef WITH_JPEG
 #include <jpeglib.h>
+#endif
+#ifdef WITH_EXR
 #include <ImfOutputFile.h>
 #include <ImfInputFile.h>
 #include <ImfChannelList.h>
 #include <ImfArray.h>
+#endif
 
 namespace image_io {
 
+#ifdef WITH_PNG
 image<unsigned char> load_png(const char *filename)
 {
 	FILE *fp = std::fopen(filename, "rb");
@@ -115,7 +122,9 @@ void save_png(const image<unsigned char> &image, const char *filename)
 	png_destroy_write_struct(&png, &info);
 	std::fclose(fp);
 }
+#endif
 
+#ifdef WITH_JPEG
 void jpg_error_handler(j_common_ptr)
 {
 	throw std::runtime_error("JPEG format not recognized");
@@ -189,7 +198,9 @@ void save_jpeg(const image<unsigned char> &image, const char *filename, int qual
 	jpeg_destroy_compress(&cinfo);
 	std::fclose(fp);
 }
+#endif
 
+#ifdef WITH_EXR
 const char *exr_channel_names[4][4] = { { "Y", "", "", "" }, { "Y", "A", "", "" }, { "R", "G", "B", "" }, { "R", "G", "B", "A" } };
 
 image<float> load_exr(const char *filename)
@@ -245,6 +256,7 @@ void save_exr(const image<float> &image, const char *filename)
 	outFile.setFrameBuffer(fb);
 	outFile.writePixels(image.height());
 }
+#endif
 
 template <typename T>
 image<T> load_bpm(const char *filename)
@@ -341,5 +353,93 @@ void save_bpm(const image<T> &image, const char *filename)
 
 template void save_bpm<unsigned char>(const image<unsigned char> &image, const char *filename);
 template void save_bpm<float>(const image<float> &image, const char *filename);
+
+enum Extension { PNG = 0x706e67, JPG = 0x6a7067, JPEG = 0x6a706567, EXR = 0x657872, PBM = 0x70626d, PGM = 0x70676d, PPM = 0x70706d, PFM = 0x70666d };
+
+Extension get_extension(const char *filename)
+{
+	int dot = -1;
+	for (int i = 0; filename[i]; ++i) {
+		if (filename[i] == '.') dot = i;
+	}
+	uint32_t ext = 0;
+	for (int i = dot + 1; filename[i]; ++i) {
+		ext <<= 8;
+		ext |= (uint8_t)::tolower(filename[i]);
+	}
+	return (Extension)ext;
+}
+
+template <>
+image<unsigned char> load(const char *filename)
+{
+	switch (get_extension(filename)) {
+#ifdef WITH_PNG
+	case PNG:
+		return load_png(filename);
+#endif
+#ifdef WITH_JPEG
+	case JPG:
+	case JPEG:
+		return load_jpeg(filename);
+#endif
+	case PBM:
+	case PGM:
+	case PPM:
+		return load_bpm(filename);
+	default:
+		throw std::runtime_error("Unsupported file extension");
+	}
+}
+template <>
+image<float> load(const char *filename)
+{
+	switch (get_extension(filename)) {
+#ifdef WITH_EXR
+	case EXR:
+		return load_exr(filename);
+#endif
+	case PFM:
+		return load_bpm<float>(filename);
+	default:
+		throw std::runtime_error("Unsupported file extension");
+	}
+}
+
+template <>
+void save(const image<unsigned char> &image, const char *filename)
+{
+	switch (get_extension(filename)) {
+#ifdef WITH_PNG
+	case PNG:
+		return save_png(image, filename);
+#endif
+#ifdef WITH_JPEG
+	case JPG:
+	case JPEG:
+		return save_jpeg(image, filename);
+#endif
+	case PBM:
+	case PGM:
+	case PPM:
+		return save_bpm(image, filename);
+	default:
+		throw std::runtime_error("Unsupported file extension");
+	}
+}
+template <>
+void save(const image<float> &image, const char *filename)
+{
+	switch (get_extension(filename)) {
+#ifdef WITH_EXR
+	case EXR:
+		return save_exr(image, filename);
+#endif
+	case PFM:
+		return save_bpm<float>(image, filename);
+	default:
+		throw std::runtime_error("Unsupported file extension");
+	}
+}
 
 }
