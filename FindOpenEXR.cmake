@@ -74,14 +74,27 @@ foreach(OPENEXR_LIB
             "${OPENEXR_LOCATION}"
             "$ENV{OPENEXR_LOCATION}"
         PATH_SUFFIXES
-            lib/
+            lib_release/
         DOC
             "OPENEXR's ${OPENEXR_LIB} library path"
     )
-
+    find_library(OPENEXR_${OPENEXR_LIB}_LIBRARY_DEBUG
+        NAMES
+            ${OPENEXR_LIB}-${OPENEXR_MAJOR_VERSION}_${OPENEXR_MINOR_VERSION}
+            ${OPENEXR_LIB}
+        HINTS
+            "${OPENEXR_LOCATION}"
+            "$ENV{OPENEXR_LOCATION}"
+        PATH_SUFFIXES
+            lib_debug/
+        DOC
+            "OPENEXR's ${OPENEXR_LIB} debug library path"
+    )
     if(OPENEXR_${OPENEXR_LIB}_LIBRARY)
-        list(APPEND OPENEXR_LIBRARIES ${OPENEXR_${OPENEXR_LIB}_LIBRARY})
+        list(APPEND OPENEXR_LIBRARIES optimized ${OPENEXR_${OPENEXR_LIB}_LIBRARY})
+        list(APPEND OPENEXR_LIBRARIES debug ${OPENEXR_${OPENEXR_LIB}_LIBRARY_DEBUG})
     endif()
+
 endforeach(OPENEXR_LIB)
 
 # So #include <half.h> works

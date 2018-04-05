@@ -5,9 +5,10 @@
 
 int main()
 {
+	std::cout << "TEST" << std::endl;
 	image<unsigned char> img = image_io::load_jpeg("in.jpg");
 	float r, g, b;
-	Eigen::Vector2d v(669.5, 689.217);
+	Eigen::Vector2d v(50.123, 50.123);
 	r = img.lin_at(v, 0);
 	g = img.lin_at(v, 1);
 	b = img.lin_at(v, 2);
@@ -21,14 +22,14 @@ int main()
 	image_io::save_exr(cp, "./saveexr.exr");
 	image_io::save_bpm<float>(cp, "./saveexr.pfm");
 
-	image<float> ex = image_io::load_exr("test.exr");
-	image_io::save_exr(ex, "./tes2t.exr");
-	image<unsigned char> cp2(ex.width(), ex.height(), 1);
-	for (int i = 0; i < ex.pixels(); ++i) {
-		cp2[i] = std::min(std::max(ex[i] * 255.f, 0.f), 255.f);
-	}
-	image_io::save_jpeg(cp2, "./exr.jpg");
-	image_io::save_bpm(cp2, "./exr.pgm");
+	//image<float> ex = image_io::load_exr("test.exr");
+	//image_io::save_exr(ex, "./tes2t.exr");
+	//image<unsigned char> cp2(ex.width(), ex.height(), 1);
+	//for (int i = 0; i < ex.pixels(); ++i) {
+	//	cp2[i] = std::min(std::max(ex[i] * 255.f, 0.f), 255.f);
+	//}
+	//image_io::save_jpeg(cp2, "./exr.jpg");
+	//image_io::save_bpm(cp2, "./exr.pgm");
 
 
 	image<unsigned char> p1 = image_io::load_bpm("p1.pbm");
@@ -45,7 +46,7 @@ int main()
 	image_io::save_bpm(p4, "dup_p4.pgm");
 	image_io::save_bpm(p5, "dup_p5.pgm");
 	image_io::save_bpm(p6, "dup_p6.ppm");
-	image_io::save(pf, "dup_pf.exr");
+	//image_io::save(pf, "dup_pf.exr");
 
 // 	image_io::load("");
 }

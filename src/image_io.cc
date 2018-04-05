@@ -21,6 +21,8 @@
 #include <ImfArray.h>
 #endif
 
+#undef max
+
 namespace image_io {
 
 #ifdef WITH_PNG
