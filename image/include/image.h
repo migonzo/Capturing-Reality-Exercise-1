@@ -143,14 +143,20 @@ typedef image<float> image_f;
 
 namespace image_io {
 
+#ifdef WITH_PNG
 image_b load_png(const char *filename);
 void save_png(const image_b &image, const char *filename);
+#endif
 
+#ifdef WITH_JPEG
 image_b load_jpeg(const char *filename);
 void save_jpeg(const image_b &image, const char *filename, int quality = 80);
+#endif
 
+#ifdef WITH_EXR
 image_f load_exr(const char *filename);
 void save_exr(const image_f &image, const char *filename);
+#endif
 
 template <typename T = unsigned char> image<T> load_bpm(const char *filename);
 template <typename T = unsigned char> void save_bpm(const image<T> &image, const char *filename);
