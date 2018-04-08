@@ -25,10 +25,10 @@ Please take care to install the following dependencies:
 * Arch Linux: `sudo pacman -S libpng libjpeg openexr eigen3`
 
 # Tow to build (on Windows)
-* Download the `3rdparty` folder and extract it to the repository root
+* Download the `3rdparty` archive and extract it to the repository root
 * Run the CMake GUI
 * Set the source directory to the repository root
 * Set the build folder to [repo root]/build
-* Run `configure` and `generate`
-* Open the project file located in the build folder with Visual Studio
-* Use Visual Studio as usual...
+* Run `Configure` and `Generate`
+* Click `Open Project` or open `CRFramework.sln`
+* Build the project using Visual Studio
