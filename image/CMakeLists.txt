@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.0)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w") # :)
 
 if(WIN32)
 	set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${3RDPARTY_PATH}/zlib ${3RDPARTY_PATH}/libjpeg ${3RDPARTY_PATH}/libpng ${3RDPARTY_PATH}/openexr)
@@ -15,6 +14,7 @@ find_package(JPEG)
 find_package(OpenEXR)
 
 add_library(image STATIC include/image.h src/image_io.cc src/image_manip.cc)
+target_compile_options(image PRIVATE "-w")
 target_include_directories(image PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 if(PNG_FOUND)
 	target_compile_definitions(image PUBLIC -DWITH_PNG)

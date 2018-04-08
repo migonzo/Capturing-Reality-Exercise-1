@@ -66,7 +66,7 @@ image<unsigned char> load_png(const char *filename)
 
 	std::vector<png_bytep> row_pointers(image.height());
 	for (std::size_t y = 0; y < image.height(); ++y) {
-		row_pointers[y] = (png_byte*)image.data2d(0, y);
+		row_pointers[y] = (png_byte*)image.ptr2d(0, y);
 	}
 	png_read_image(png, row_pointers.data());
 
@@ -115,7 +115,7 @@ void save_png(const image<unsigned char> &image, const char *filename)
 
 	std::vector<png_bytep> row_pointers(image.height());
 	for (std::size_t y = 0; y < image.height(); ++y) {
-		row_pointers[y] = (png_byte*)image.data2d(0, y);
+		row_pointers[y] = (png_byte*)image.ptr2d(0, y);
 	}
 
 	png_write_image(png, row_pointers.data());
@@ -192,7 +192,7 @@ void save_jpeg(const image<unsigned char> &image, const char *filename, int qual
 	jpeg_start_compress(&cinfo, TRUE);
 
 	while (cinfo.next_scanline < cinfo.image_height) {
-		JSAMPROW row_pointer = (JSAMPROW)image.data2d(0, cinfo.next_scanline);
+		JSAMPROW row_pointer = (JSAMPROW)image.ptr2d(0, cinfo.next_scanline);
 		jpeg_write_scanlines(&cinfo, &row_pointer, 1);
 	}
 

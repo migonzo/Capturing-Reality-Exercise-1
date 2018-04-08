@@ -46,6 +46,7 @@ struct image {
 		resize(other.width(), other.height(), other.channels);
 	}
 
+	// raw indexing, ignoring channels
 	T *data(std::size_t idx = 0)
 	{
 		return _data.data() + idx;
@@ -55,64 +56,64 @@ struct image {
 		return _data.data() + idx;
 	}
 
-	T *data(std::size_t idx, std::size_t c)
+	// 1D indexing of the image matrix
+	T *ptr(std::size_t idx, std::size_t c = 0)
 	{
 		return data(idx * nc + c);
 	}
-	const T *data(std::size_t idx, std::size_t c) const
+	const T *ptr(std::size_t idx, std::size_t c = 0) const
 	{
 		return data(idx * nc + c);
 	}
 
-	T *data2d(std::size_t x, std::size_t y, std::size_t c = 0)
+	// 2D indexing of the image matrix
+	T *ptr2d(std::size_t x, std::size_t y, std::size_t c = 0)
 	{
 		return data(y * w * nc + x * nc + c);
 	}
-	const T *data2d(std::size_t x, std::size_t y, std::size_t c = 0) const
+	const T *ptr2d(std::size_t x, std::size_t y, std::size_t c = 0) const
 	{
 		return data(y * w * nc + x * nc + c);
 	}
 
-	T &operator[](std::size_t idx)
-	{
-		return *data(idx);
-	}
-	const T &operator[](std::size_t idx) const
-	{
-		return *data(idx);
-	}
-
+	// 1D indexing of the image matrix
 	T &at(std::size_t idx, std::size_t c = 0)
 	{
-		return *data(idx, c);
+		return *ptr(idx, c);
 	}
 	const T &at(std::size_t idx, std::size_t c = 0) const
 	{
-		return *data(idx, c);
+		return *ptr(idx, c);
+	}
+	T &operator[](std::size_t idx)
+	{
+		return *ptr(idx);
+	}
+	const T &operator[](std::size_t idx) const
+	{
+		return *ptr(idx);
 	}
 
-	T &operator()(std::size_t x, std::size_t y = 0, std::size_t c = 0)
+	// 2D indexing of the image matrix
+	T &at2d(std::size_t x, std::size_t y, std::size_t c = 0)
 	{
-		return *data2d(x, y, c);
+		return *ptr2d(x, y, c);
 	}
-	const T &operator()(std::size_t x, std::size_t y = 0, std::size_t c = 0) const
+	const T &at2d(std::size_t x, std::size_t y, std::size_t c = 0) const
 	{
-		return *data2d(x, y, c);
+		return *ptr2d(x, y, c);
 	}
-
-	template <typename V>
-	T &operator()(const V &v, std::size_t c = 0)
+	T &operator()(std::size_t x, std::size_t y, std::size_t c = 0)
 	{
-		return (*this)(v[0], v[1], c);
+		return *ptr2d(x, y, c);
 	}
-	template <typename V>
-	const T &operator()(const V &v, std::size_t c = 0) const
+	const T &operator()(std::size_t x, std::size_t y, std::size_t c = 0) const
 	{
-		return (*this)(v[0], v[1], c);
+		return *ptr2d(x, y, c);
 	}
 
 	template <typename U = float>
-	U lin_at(float x, float y, std::size_t c = 0) const
+	U at_lin(float x, float y, std::size_t c = 0) const
 	{
 		std::size_t xl = x, yl = y;
 		std::size_t xu = xl + 1, yu = yl + 1;
@@ -127,10 +128,22 @@ struct image {
 		U l1 = p2 * (1.f - ax) + p3 * ax;
 		return l0 * (1.f - ay) + l1 * ay;
 	}
-	template <typename U = float, typename V>
-	U lin_at(const V &v, std::size_t c = 0) const
+
+	// vector variants
+	template <typename V>
+	T &at_v(const V &v, std::size_t c = 0)
 	{
-		return lin_at(v[0], v[1], c);
+		return (*this)(v[0], v[1], c);
+	}
+	template <typename V>
+	const T &at_v(const V &v, std::size_t c = 0) const
+	{
+		return (*this)(v[0], v[1], c);
+	}
+	template <typename U = float, typename V>
+	U at_v_lin(const V &v, std::size_t c = 0) const
+	{
+		return at_lin(v[0], v[1], c);
 	}
 
 private:

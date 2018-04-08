@@ -10,20 +10,20 @@ image_b img(512, 128, 3); // RGB image of size 512x128
 ```
 
 ## Accessing the pixels
-Pixels can be accessed using `operator[]` for 1D indexing and `operator()` for 2D (+channel) indexing:
+Pixels can be accessed using `operator[]` or `at` for 1D indexing and `operator()` or `at2d` for 2D (+channel) indexing:
 ```
 unsigned char green_at_12_34 = img(12, 34, 1);
 ```
 
 The `lin_at` method already implements bi-linear interpolation:
 ```
-unsigned char green_interp = img.lin_at(12.34f, 56.78f, 1);
+unsigned char green_interp = img.at_lin(12.34f, 56.78f, 1);
 ```
 
 You can also use any array-like type that implements `operator[]`, like `Eigen::Vector2d` or `std::vector`:
 ```
 Eigen::Vector2d v(12.34, 56.78);
-unsigned char green_interp = img.lin_at(v, 1);
+unsigned char green_interp = img.at_v_lin(v, 1);
 ```
 
 ## Loading and saving image files

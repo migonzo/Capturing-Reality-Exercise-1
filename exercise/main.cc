@@ -19,9 +19,9 @@ void example(const char *filename)
 			Eigen::Vector2d p(x, y);
 			Eigen::Vector2d pa = p + Eigen::Vector2d(r + 10, r + 10);
 			if (p.norm() <= r) {
-				img_b(pa, 0) = 255;
-				img_b(pa, 1) = 0;
-				img_b(pa, 2) = 0;
+				img_b.at_v(pa, 0) = 255;
+				img_b.at_v(pa, 1) = 0;
+				img_b.at_v(pa, 2) = 0;
 			}
 		}
 	}
