@@ -40,6 +40,12 @@ struct image {
 		_data.resize(w * h * nc);
 	}
 
+	template <typename U>
+	void resize(const image<U> &other)
+	{
+		resize(other.width(), other.height(), other.channels);
+	}
+
 	T *data(std::size_t idx = 0)
 	{
 		return _data.data() + idx;
@@ -94,6 +100,17 @@ struct image {
 		return *data2d(x, y, c);
 	}
 
+	template <typename V>
+	T &operator()(const V &v, std::size_t c = 0)
+	{
+		return (*this)(v[0], v[1], c);
+	}
+	template <typename V>
+	const T &operator()(const V &v, std::size_t c = 0) const
+	{
+		return (*this)(v[0], v[1], c);
+	}
+
 	template <typename U = float>
 	U lin_at(float x, float y, std::size_t c = 0) const
 	{
@@ -126,19 +143,25 @@ typedef image<float> image_f;
 
 namespace image_io {
 
-image<unsigned char> load_png(const char *filename);
-void save_png(const image<unsigned char> &image, const char *filename);
+image_b load_png(const char *filename);
+void save_png(const image_b &image, const char *filename);
 
-image<unsigned char> load_jpeg(const char *filename);
-void save_jpeg(const image<unsigned char> &image, const char *filename, int quality = 80);
+image_b load_jpeg(const char *filename);
+void save_jpeg(const image_b &image, const char *filename, int quality = 80);
 
-image<float> load_exr(const char *filename);
-void save_exr(const image<float> &image, const char *filename);
+image_f load_exr(const char *filename);
+void save_exr(const image_f &image, const char *filename);
 
 template <typename T = unsigned char> image<T> load_bpm(const char *filename);
 template <typename T = unsigned char> void save_bpm(const image<T> &image, const char *filename);
 
 template <typename T = unsigned char> image<T> load(const char *filename);
 template <typename T = unsigned char> void save(const image<T> &image, const char *filename);
+
+}
+
+namespace image_manip {
+
+image_f grayscale(const image_b &src);
 
 }

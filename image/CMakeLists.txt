@@ -32,7 +32,7 @@ if(OPENEXR_FOUND)
 	include_directories(${OPENEXR_INCLUDE_DIRS})
 endif()
 
-add_library(image STATIC include/image.h src/image_io.cc)
+add_library(image STATIC include/image.h src/image_io.cc src/image_manip.cc)
 target_include_directories(image PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 if(PNG_FOUND)
 	target_link_libraries(image ${PNG_LIBRARIES})

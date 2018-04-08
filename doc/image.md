@@ -29,12 +29,12 @@ unsigned char green_interp = img.lin_at(v, 1);
 ## Loading and saving image files
 Images can be loaded using the `image_io::load` function:
 ```
-image_b img = load("file.png");
+image_b img = image_io::load("file.png");
 ```
 
 Afterwards, they can be saved using the `image_io::save` function:
 ```
-img.save("bla.jpg");
+image_io::save(img, "bla.jpg");
 ```
 
 ## image.h

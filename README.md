@@ -9,7 +9,7 @@ make -j4
 ```
 
 ```
-./exercise/ex
+./exercise/ex ~/Pictures/SomeImageFile.jpeg
 ```
 
 Please take care to install the following dependencies:
