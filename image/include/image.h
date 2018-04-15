@@ -76,6 +76,16 @@ struct image {
 		return data(y * w * nc + x * nc + c);
 	}
 
+	// raw indexing of the image matrix
+	T &operator[](std::size_t idx)
+	{
+		return *data(idx);
+	}
+	const T &operator[](std::size_t idx) const
+	{
+		return *data(idx);
+	}
+
 	// 1D indexing of the image matrix
 	T &at(std::size_t idx, std::size_t c = 0)
 	{
@@ -84,14 +94,6 @@ struct image {
 	const T &at(std::size_t idx, std::size_t c = 0) const
 	{
 		return *ptr(idx, c);
-	}
-	T &operator[](std::size_t idx)
-	{
-		return *ptr(idx);
-	}
-	const T &operator[](std::size_t idx) const
-	{
-		return *ptr(idx);
 	}
 
 	// 2D indexing of the image matrix
