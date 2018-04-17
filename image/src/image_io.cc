@@ -263,7 +263,7 @@ void save_exr(const image<float> &image, const char *filename)
 template <typename T>
 image<T> load_bpm(const char *filename)
 {
-	std::ifstream is(filename);
+	std::ifstream is(filename, std::ios_base::binary);
 	std::string magic;
 	is >> magic;
 	std::size_t channels;
