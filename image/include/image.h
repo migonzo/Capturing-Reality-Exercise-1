@@ -173,11 +173,21 @@ image_f load_exr(const char *filename);
 void save_exr(const image_f &image, const char *filename);
 #endif
 
-template <typename T = unsigned char> image<T> load_bpm(const char *filename);
-template <typename T = unsigned char> void save_bpm(const image<T> &image, const char *filename);
+template <typename T = unsigned char> image<T> load_pbm(const char *filename);
+template <typename T = unsigned char> void save_pbm(const image<T> &image, const char *filename);
 
 template <typename T = unsigned char> image<T> load(const char *filename);
 template <typename T = unsigned char> void save(const image<T> &image, const char *filename);
+
+// deprecated
+template <typename T = unsigned char> image<T> load_bpm(const char *filename)
+{
+	return load_pbm(filename);
+}
+template <typename T = unsigned char> void save_bpm(const image<T> &image, const char *filename)
+{
+	save_pbm(image, filename);
+}
 
 }
 
