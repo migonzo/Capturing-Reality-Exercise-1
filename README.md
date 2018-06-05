@@ -18,11 +18,12 @@ Please take care to install the following dependencies:
 * jpeglib
 * OpenEXR
 * Eigen
+* Ceres (for the data fitting exercise)
 
 ...using the following commands:
 
-* Debian and Ubuntu: `sudo apt-get install libpng-dev libjpeg-dev libopenexr-dev libeigen3-dev`
-* Arch Linux: `sudo pacman -S libpng libjpeg openexr eigen3`
+* Debian and Ubuntu: `sudo apt-get install libpng-dev libjpeg-dev libopenexr-dev libeigen3-dev ceres-solver`
+* Arch Linux: `sudo pacman -S libpng libjpeg openexr eigen3`, `ceres-solver` from AUR
 
 # Tow to build (on Windows)
 * Download the `3rdparty` archive and extract it to the repository root

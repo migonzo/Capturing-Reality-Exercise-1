@@ -1,6 +1,6 @@
 project(CRFramework)
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.1)
 
 if(WIN32)
 	set(3RDPARTY_PATH "${CMAKE_SOURCE_DIR}/3rdparty" CACHE PATH "Location of the 3rd party libraries")

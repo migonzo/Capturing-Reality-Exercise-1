@@ -5,6 +5,12 @@
 #include <iostream>
 #include <Eigen/Dense>
 
+#define FITTING_EXAMPLE
+
+#ifdef FITTING_EXAMPLE
+#include "ceres/ceres.h"
+#endif
+
 void example(const char *filename)
 {
 	std::cout << "Running example code..." << std::endl;
@@ -33,11 +39,55 @@ void example(const char *filename)
 	image_io::save(img_f, "out.pfm");
 }
 
+#ifdef FITTING_EXAMPLE
+// adopted from: https://ceres-solver.googlesource.com/ceres-solver/+/master/examples/helloworld.cc
+struct ExampleCostFunctor {
+	template <typename T>
+	bool operator()(const T* const x, T* residual) const {
+		residual[0] = 10.0 - x[0];
+		return true;
+	}
+
+	static ceres::CostFunction* Create() {
+		return new ceres::AutoDiffCostFunction<ExampleCostFunctor, 1, 1>(new ExampleCostFunctor);
+	}
+};
+
+void fitting_example()
+{
+	std::cout << "Running fitting example code..." << std::endl;
+
+	double x = 0.5;
+	const double initial_x = x;
+
+	// Build the problem.
+	ceres::Problem problem;
+
+	// Set up the only cost function (also known as residual). This uses
+	// auto-differentiation to obtain the derivative (jacobian).
+	ceres::CostFunction* cost_function = ExampleCostFunctor::Create();
+	problem.AddResidualBlock(cost_function, NULL, &x);
+
+	// Run the solver!
+	ceres::Solver::Options options;
+	options.minimizer_progress_to_stdout = true;
+	ceres::Solver::Summary summary;
+	ceres::Solve(options, &problem, &summary);
+
+	std::cout << summary.BriefReport() << std::endl;
+	std::cout << "x: " << initial_x << " -> " << x << std::endl;
+}
+#endif
+
 int main(int argc, const char **argv)
 {
 	if (argc != 2) throw std::runtime_error("Invalid arguments");
 
 	example(argv[1]);
+
+#ifdef FITTING_EXAMPLE
+	fitting_example();
+#endif
 
 	return EXIT_SUCCESS;
 }
