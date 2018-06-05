@@ -43,12 +43,14 @@ void example(const char *filename)
 // adopted from: https://ceres-solver.googlesource.com/ceres-solver/+/master/examples/helloworld.cc
 struct ExampleCostFunctor {
 	template <typename T>
-	bool operator()(const T* const x, T* residual) const {
+	bool operator()(const T *const x, T *residual) const
+	{
 		residual[0] = 10.0 - x[0];
 		return true;
 	}
 
-	static ceres::CostFunction* Create() {
+	static ceres::CostFunction *Create()
+	{
 		return new ceres::AutoDiffCostFunction<ExampleCostFunctor, 1, 1>(new ExampleCostFunctor);
 	}
 };
@@ -65,7 +67,7 @@ void fitting_example()
 
 	// Set up the only cost function (also known as residual). This uses
 	// auto-differentiation to obtain the derivative (jacobian).
-	ceres::CostFunction* cost_function = ExampleCostFunctor::Create();
+	ceres::CostFunction *cost_function = ExampleCostFunctor::Create();
 	problem.AddResidualBlock(cost_function, NULL, &x);
 
 	// Run the solver!
