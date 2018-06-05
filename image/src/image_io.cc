@@ -261,9 +261,9 @@ void save_exr(const image<float> &image, const char *filename)
 #endif
 
 template <typename T>
-image<T> load_bpm(const char *filename)
+image<T> load_pbm(const char *filename)
 {
-	std::ifstream is(filename);
+	std::ifstream is(filename, std::ios_base::binary);
 	std::string magic;
 	is >> magic;
 	std::size_t channels;
@@ -334,11 +334,11 @@ image<T> load_bpm(const char *filename)
 	return image;
 }
 
-template image<unsigned char> load_bpm<unsigned char>(const char *filename);
-template image<float> load_bpm<float>(const char *filename);
+template image<unsigned char> load_pbm<unsigned char>(const char *filename);
+template image<float> load_pbm<float>(const char *filename);
 
 template <typename T>
-void save_bpm(const image<T> &image, const char *filename)
+void save_pbm(const image<T> &image, const char *filename)
 {
 	std::ofstream os(filename, std::ios_base::binary);
 	if (std::is_floating_point<T>::value && image.channels() == 1) os << "Pf\n";
@@ -353,8 +353,8 @@ void save_bpm(const image<T> &image, const char *filename)
 	os.write((const char*)image.data(), image.bytes());
 }
 
-template void save_bpm<unsigned char>(const image<unsigned char> &image, const char *filename);
-template void save_bpm<float>(const image<float> &image, const char *filename);
+template void save_pbm<unsigned char>(const image<unsigned char> &image, const char *filename);
+template void save_pbm<float>(const image<float> &image, const char *filename);
 
 enum Extension { PNG = 0x706e67, JPG = 0x6a7067, JPEG = 0x6a706567, EXR = 0x657872, PBM = 0x70626d, PGM = 0x70676d, PPM = 0x70706d, PFM = 0x70666d };
 
@@ -388,7 +388,7 @@ image<unsigned char> load(const char *filename)
 	case PBM:
 	case PGM:
 	case PPM:
-		return load_bpm(filename);
+		return load_pbm(filename);
 	default:
 		throw std::runtime_error("Unsupported file extension");
 	}
@@ -402,7 +402,7 @@ image<float> load(const char *filename)
 		return load_exr(filename);
 #endif
 	case PFM:
-		return load_bpm<float>(filename);
+		return load_pbm<float>(filename);
 	default:
 		throw std::runtime_error("Unsupported file extension");
 	}
