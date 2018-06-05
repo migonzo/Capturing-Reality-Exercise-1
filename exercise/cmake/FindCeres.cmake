@@ -25,7 +25,7 @@ if(NOT EXISTS "${CERES_DIR}")
 endif()
 
 set(CERES_VERSION "")
-if(EXISTS "${CERES_DIR}")
+if(EXISTS "${CERES_DIR}" AND EXISTS "${CERES_DIR}/CeresConfig.cmake")
 
 	## Include the standard CMake script
 	include("${CERES_DIR}/CeresConfig.cmake")
