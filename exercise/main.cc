@@ -1,11 +1,14 @@
 #include "image.h"
 
+#include "ply.h"
+
 #include <stdexcept>
 #include <cstdlib>
 #include <iostream>
 #include <Eigen/Dense>
+#include <fstream>
 
-#define FITTING_EXAMPLE
+// #define FITTING_EXAMPLE
 
 #ifdef FITTING_EXAMPLE
 #include "ceres/ceres.h"
@@ -82,6 +85,15 @@ void fitting_example()
 }
 #endif
 
+int ply_example()
+{
+	std::vector<Vertex> vertices = { { 0, 0, 0, 1, 0, 0, 255, 0, 0 }, { 0, 1, 0, 1, 0, 0, 0, 255, 0 }, { 1, 0, 0, 1, 0, 0, 0, 0, 255 } };
+	std::vector<Face> faces = { { 0, 1, 2 } };
+
+	std::ofstream os("out.ply", std::ios_base::binary);
+	write_ply_mesh(os, vertices, faces);
+}
+
 int main(int argc, const char **argv)
 {
 	if (argc != 2) throw std::runtime_error("Invalid arguments");
@@ -91,6 +103,8 @@ int main(int argc, const char **argv)
 #ifdef FITTING_EXAMPLE
 	fitting_example();
 #endif
+
+	ply_example();
 
 	return EXIT_SUCCESS;
 }

@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 find_package(Eigen3 REQUIRED)
 
-add_executable(ex main.cc)
+add_executable(ex main.cc ply.cc)
 target_include_directories(ex PRIVATE ${EIGEN3_INCLUDE_DIR})
 target_link_libraries(ex image)
 
