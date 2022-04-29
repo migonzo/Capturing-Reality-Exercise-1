@@ -146,12 +146,6 @@ void fill_e_m(const std::vector<image_b> images, const unsigned int channel, con
 
 }
 
-void fill_e_m_rgb(const std::vector<image_b> images, const unsigned int channels, const unsigned int num_images, const unsigned int num_pixels, unsigned int* cardinalities, std::vector<std::vector<std::tuple<unsigned int, unsigned int>>>& e_m) {
-	for (unsigned int i = 0; i < channels; ++i) {
-		fill_e_m(images, i, num_images, num_pixels, cardinalities + i * 256, )
-	}
-}
-
 void calculate_weights(const image_b image, const unsigned int channel, const unsigned int num_pixels, float* weights) {
 	for (int i = 0; i < num_pixels; ++i) {
 		const unsigned int pixel_value = image.at(i, channel);
@@ -171,21 +165,9 @@ void calculate_weights_all_images(const std::vector<image_b> images, const unsig
 	}
 }
 
-void calculate_weights_all_images_rgb(const std::vector<image_b> images, const unsigned int channels, const unsigned int num_images, const unsigned int num_pixels, float* weights) {
-	for (unsigned int i = 0; i < 3; ++i) {
-		calculate_weights_all_images(images, i, num_images, num_pixels, weights + i * num_pixels);
-	}
-}
-
 void calculate_initial_i_m(float* i_m) {
 	for (unsigned int i = 0; i < 256; ++i) {
 		i_m[i] = i * (1.0 / 128.0);
-	}
-}
-
-void calculate_initial_i_m_rgb(float* i_m, const unsigned int channels) {
-	for (unsigned int i = 0; i < channels; ++i) {
-		calculate_initial_i_m(i_m + i * 256);
 	}
 }
 
@@ -224,23 +206,11 @@ void calculate_irradiances(const float* weights, const float* times, const float
 		for (unsigned int i = 0; i < num_images; ++i) {
 			const unsigned int index = h + i * num_pixels;
 			const unsigned int pixel_value = images[i].at(h, channel);
-			if (h == 200)
-				std::cout << "pixel_value: " << pixel_value << " weight: " << weights[index] << " time: " << times[i] << " I_m: " << i_m[pixel_value] << "\n";
 			sum_1 += weights[index] * times[i] * i_m[pixel_value];
 
 			sum_2 += weights[index] * times[i] * times[i];
 		}
-		if (h == 200)
-			std::cout << "sum1: " << sum_1 << " sum2: " << sum_2 << "\n";
 		irradiance[h] = sum_1 / sum_2;
-		if (h == 200)
-			std::cout << "irradiance: " << irradiance[h] << "\n";
-	}
-}
-
-void calculate_irradiances_rgb(const float* weights, const float* times, const float* i_m, std::vector<image_b> images, const unsigned int channels, const unsigned int num_images, const unsigned int num_pixels, float* irradiance) {
-	for (unsigned int i = 0; i < channels; ++i) {
-		calculate_irradiances(weights, times, i_m, images, i, num_images, num_pixels, irradiance + i * num_pixels);
 	}
 }
 
@@ -265,12 +235,14 @@ void assign_pixel_value_to_irradiances_with_exposure(const float* irradiances, c
 			if (i_value <= i_m[pixel_value])
 				break;
 		}
+		//if (time >= 1.0 && pixel_value < 5)
+			//std::cout << "black with value: "  << i_value << " at " << i << " irradiance: " << irradiances[i] << " time: " << time << "\n";
 		image.at(i, channel) = pixel_value;
 	}
 }
 
 // calculates the objective function for unknown response function
-float calculate_objective_function(const float* weights, const float* times, const float* i_m, std::vector<image_b> images, const unsigned int channel, const float* irradiances, const unsigned int num_images, const unsigned int num_pixels) {
+float calculate_objective_function(const float* weights, const float* times, const float* i_m, std::vector<image_b> images, const float* irradiances, const unsigned int num_images, const unsigned int num_pixels) {
 
 	float result = 0;
 
@@ -279,7 +251,7 @@ float calculate_objective_function(const float* weights, const float* times, con
 		for (unsigned int j = 0; j < num_pixels; ++j) {
 
 			unsigned int index = i * num_pixels + j;
-			const unsigned int pixel_value = images[i].at(j, channel);
+			const unsigned int pixel_value = images[i].at(j, 0);
 			float intermediate = i_m[pixel_value] - times[i] * irradiances[j];
 			result += weights[index] * intermediate * intermediate;
 
@@ -309,27 +281,41 @@ int main(int argc, const char **argv)
 
 	std::cout << "height " << image_height << " width " << image_width << " channels " << image_channels << " pixels per image: " << num_pixels << "\n";
 
-	std::vector<float> weights(num_pixels * num_images * image_channels);
+	std::vector<float> weights_red(num_pixels * num_images);
+	std::vector<float> weights_green(num_pixels * num_images);
+	std::vector<float> weights_blue(num_pixels * num_images);
 
 
-	calculate_weights_all_images_rgb(images, image_channels, num_images, num_pixels, weights.data());
+	calculate_weights_all_images(images, 0, num_images, num_pixels, weights_red.data());
+	calculate_weights_all_images(images, 1, num_images, num_pixels, weights_green.data());
+	calculate_weights_all_images(images, 2, num_images, num_pixels, weights_blue.data());
 
-	float i_m[256 * image_channels];
+	float i_m_red[256];
+	float i_m_green[256];
+	float i_m_blue[256];
 
-	calculate_initial_i_m_rgb(i_m, image_channels);
+	calculate_initial_i_m(i_m_red);
+	calculate_initial_i_m(i_m_green);
+	calculate_initial_i_m(i_m_blue);
 
-	std::vector<float> irradiances(num_pixels * image_channels);
 
-	calculate_irradiances_rgb(weights.data(), times.data(), i_m, images, image_channels, num_images, num_pixels, irradiances.data());
+	std::vector<float> irradiances_red(num_pixels);
+	std::vector<float> irradiances_green(num_pixels);
+	std::vector<float> irradiances_blue(num_pixels);
 
-	std::vector<unsigned int> cardinalities_red(256 * image_channels);
+	calculate_irradiances(weights_red.data(), times.data(), i_m_red, images, 0, num_images, num_pixels, irradiances_red.data());
+	calculate_irradiances(weights_green.data(), times.data(), i_m_green, images, 1, num_images, num_pixels, irradiances_green.data());
+	calculate_irradiances(weights_blue.data(), times.data(), i_m_blue, images, 2, num_images, num_pixels, irradiances_blue.data());
 
-	std::vector<std::vector <std::vector<std::tuple<unsigned int, unsigned int>>>> e_m(image_channels);
-	for(unsigned int i = 0; i < image_channels; ++i) {
-		e_m[i] = std::vector<std::vector<std::tuple<unsigned int, unsigned int>>>(256);
-	}
+	unsigned int cardinalities_red[256] = { 0 }; // needs to be initialized with 0s
+	unsigned int cardinalities_green[256] = { 0 }; 
+	unsigned int cardinalities_blue[256] = { 0 }; 
 
-	fill_e_m_rgb(images, image_channels, num_images, num_pixels, cardinalities.data(), e_m);
+	std::vector <std::vector<std::tuple<unsigned int, unsigned int>>> e_m_red(256);
+	std::vector <std::vector<std::tuple<unsigned int, unsigned int>>> e_m_green(256);
+	std::vector <std::vector<std::tuple<unsigned int, unsigned int>>> e_m_blue(256);
+
+	fill_e_m(images, 0, num_images, num_pixels, cardinalities_red, e_m_red);
 	fill_e_m(images, 1, num_images, num_pixels, cardinalities_green, e_m_green);
 	fill_e_m(images, 2, num_images, num_pixels, cardinalities_blue, e_m_blue);
 
@@ -349,8 +335,10 @@ int main(int argc, const char **argv)
 		calculate_irradiances(weights_green.data(), times.data(), i_m_green, images, 1, num_images, num_pixels, irradiances_green.data());
 		calculate_irradiances(weights_blue.data(), times.data(), i_m_blue, images, 2, num_images, num_pixels, irradiances_blue.data());
 
-		//calculate_objective_function(weights.data(), times.data(), i_m, images, irradiances.data(), num_images, num_pixels);
+		float result = calculate_objective_function(weights_red.data(), times.data(), i_m_red, images, irradiances_red.data(), num_images, num_pixels);
 
+		if (result < 100.0)
+			break;
 	}
 
 	float max_red = -10000000000.0;
@@ -402,21 +390,6 @@ int main(int argc, const char **argv)
 	std::string out_str = "C:\\Users\\migon\\Documents\\Capturing Reality\\output.png";
 	image_io::save_png(output, out_str.data());*/
 
-	std::cout << "red:\n";
-	for (unsigned int j = 1; j < 256; ++j) {
-		//if (i_m_red[j] < i_m_red[j - 1])
-			std::cout << "i_" << j << ": " << i_m_red[j] << "\n";
-	}
-	std::cout << "green:\n";
-	for (unsigned int j = 1; j < 256; ++j) {
-		//if (i_m_green[j] < i_m_green[j - 1])
-			std::cout << "i_" << j << ": " << i_m_green[j] << "\n";
-	}
-	std::cout << "blue:\n";
-	for (unsigned int j = 1; j < 256; ++j) {
-		//if (i_m_blue[j] < i_m_blue[j - 1])
-			std::cout << "i_" << j << ": " << i_m_blue[j] << "\n";
-	}
 
 	//example(argv[1]);
 
