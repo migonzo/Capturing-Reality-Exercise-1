@@ -7,8 +7,10 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <fstream>
+#include <string>
 
 // #define FITTING_EXAMPLE
+using namespace std;
 
 #ifdef FITTING_EXAMPLE
 #include "ceres/ceres.h"
@@ -96,15 +98,13 @@ int ply_example()
 
 int main(int argc, const char **argv)
 {
-	if (argc != 2) throw std::runtime_error("Invalid arguments");
+// 	if (argc != 2) throw std::runtime_error("Invalid arguments");
+// 	example(argv[1]);
 
-	example(argv[1]);
+	string path = "~/Spare Downloads/spherical_panorama2.jpg";
 
-#ifdef FITTING_EXAMPLE
-	fitting_example();
-#endif
-
-	ply_example();
+	image<int> img = load(path.data());
+	cout << "ok" << endl;
 
 	return EXIT_SUCCESS;
 }
