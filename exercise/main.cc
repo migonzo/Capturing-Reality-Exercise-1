@@ -104,6 +104,41 @@ int main(int argc, const char **argv)
 	const char *path = "/home/arthur/Pictures/spherical_panorama2.jpg";
 
 	image<unsigned char> img = image_io::load(path);
+	int width = img.width(), height = img.height();
+	cout << width << " " << height << endl;
+
+	int center_x = width / 2, center_y = height / 2;
+	int radius = center_x;
+
+	for (int i = center_x - 5; i < center_x + 5; i++)
+	{
+		for (int j = center_y - 5; j < center_y + 5; j++)
+		{
+			int x = (i - center_x), y = (j - center_y);
+			double new_x, new_y, new_z;
+
+			if(x == 0 && y == 0) 
+			{
+				new_x = new_y = new_z = 0;
+			}
+			else 
+			{
+				int sqr_dist = x * x + y * y;
+				int diff = radius * radius - sqr_dist;
+
+				if(diff < 0) continue;
+
+				new_x = (x * radius) / sqrt(sqr_dist);
+				new_y = (y * radius) / sqrt(sqr_dist);
+				new_z = sqrt(radius * radius - sqr_dist);
+
+				printf("radius^2: %d, sqrdist: %d\n", radius * radius, sqr_dist);
+			}
+
+			printf("newx: %lf, newy: %lf, newz: %lf, \n", new_x,new_y,new_z);
+		}
+	}
+	
 
 	cout << "ok" << endl;
 
