@@ -101,9 +101,10 @@ int main(int argc, const char **argv)
 // 	if (argc != 2) throw std::runtime_error("Invalid arguments");
 // 	example(argv[1]);
 
-	string path = "~/Spare Downloads/spherical_panorama2.jpg";
+	const char *path = "/home/arthur/Pictures/spherical_panorama2.jpg";
 
-	image<int> img = load(path.data());
+	image<unsigned char> img = image_io::load(path);
+
 	cout << "ok" << endl;
 
 	return EXIT_SUCCESS;
