@@ -9,6 +9,8 @@
 #include <fstream>
 #include <string>
 
+#define PI 3.1415926
+
 // #define FITTING_EXAMPLE
 using namespace std;
 
@@ -107,51 +109,61 @@ int main(int argc, const char **argv)
 	int width = img.width(), height = img.height();
 	cout << width << " " << height << endl;
 
-	int center_x = width / 2, center_z = height / 2;
-	int radius = center_x;
+	int radius = width / 2;
 	int r_2 = radius * radius;
 
-	Eigen::Vector3d R = {0, -1, 0};
+	int new_width = 1000;//PI * width; // choice
+	int new_height = height;
 
-	for (int i = center_x - 2; i < center_x + 2; i++)
+	int center_x = new_width / 2, center_z = new_height / 2;
+
+	double rc = new_width / (2 * PI);
+	//double n = 2 * rc;
+
+	Eigen::Vector3d R = {0, 1, 0};
+	//R = R / R.norm();
+
+	for (int i = 0; i < 2; i++)
 	{
 		for (int j = center_z - 2; j < center_z + 2; j++)
 		{
-			int x = (i - center_x), z = (j - center_z);
-			double new_x, new_y, new_z;
+			//int x = (i - center_x), z = (j - center_z);
+			double angle = 2 * PI * (i / ( (double) new_width + 1));
+
+			double a = rc * sin(angle);
+			double b = rc * cos(angle);
+			double c = j - new_height / 2;
+
+			printf("a=%lf, b=%lf, c=%lf", a, b, c);
+
+			Eigen::Vector3d O = {a, b, c};
+			O = O / O.norm();
+
+			a = O(0);
+			b = O(1);
+			c = O(2);
+
+			double new_y = sqrt( (1 - b) / 2);
+			double new_x = -a / (2 * new_y);
+			double new_z = -c / (2 * new_y);
+			
+			Eigen::Vector3d N = {new_x, new_y, new_z};
+			N = N / N.norm();
 
 			printf("=======================================\n");
 
-			if(x == 0 && z == 0) 
-			{
-				new_x = new_z = 0;
-				new_y = radius;
-			}
-			else 
-			{
-				int sqr_dist = x * x + z * z;
-				int diff = r_2 - sqr_dist;
-
-				if(diff < 0) continue;
-
-				new_x = x;
-				new_z = z;
-				new_y = sqrt(diff);
-
-				printf("x: %d, z: %d\n", x, z);
-				printf("radius^2: %d, sqrdist: %d\n", r_2, sqr_dist);
-			}
-
+			printf("i: %d, j: %d\n", i, j);
 			printf("newx: %lf, newy: %lf, newz: %lf, \n", new_x,new_y,new_z);
-			Eigen::Vector3d N = {new_x, new_y, new_z};
-			Eigen::Vector3d O = R - 2 * R.dot(N) * N / (N.norm());
+			cout << N << endl;
+
+			//Eigen::Vector3d O = R - 2 * R.dot(N) * N / (N.norm());
 
 			// t1 = a + x, t2 = b + y
 			double t1 = O(0) + new_x, t2 = O(1) + new_y;
 			double scale = sqrt( r_2 / ( t1 * t1 + t2 * t2 ) );
 			//scale /= O.norm(); // normalize original direction
 
-			double point_in_cyll = N + scale * O;
+			//double point_in_cyll = N + scale * O;
 
 			//cout << N << endl;
 			cout << t1 << " " << t2 << endl;
