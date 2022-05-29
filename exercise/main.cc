@@ -107,35 +107,57 @@ int main(int argc, const char **argv)
 	int width = img.width(), height = img.height();
 	cout << width << " " << height << endl;
 
-	int center_x = width / 2, center_y = height / 2;
+	int center_x = width / 2, center_z = height / 2;
 	int radius = center_x;
+	int r_2 = radius * radius;
 
-	for (int i = center_x - 5; i < center_x + 5; i++)
+	Eigen::Vector3d R = {0, -1, 0};
+
+	for (int i = center_x - 2; i < center_x + 2; i++)
 	{
-		for (int j = center_y - 5; j < center_y + 5; j++)
+		for (int j = center_z - 2; j < center_z + 2; j++)
 		{
-			int x = (i - center_x), y = (j - center_y);
+			int x = (i - center_x), z = (j - center_z);
 			double new_x, new_y, new_z;
 
-			if(x == 0 && y == 0) 
+			printf("=======================================\n");
+
+			if(x == 0 && z == 0) 
 			{
-				new_x = new_y = new_z = 0;
+				new_x = new_z = 0;
+				new_y = radius;
 			}
 			else 
 			{
-				int sqr_dist = x * x + y * y;
-				int diff = radius * radius - sqr_dist;
+				int sqr_dist = x * x + z * z;
+				int diff = r_2 - sqr_dist;
 
 				if(diff < 0) continue;
 
-				new_x = (x * radius) / sqrt(sqr_dist);
-				new_y = (y * radius) / sqrt(sqr_dist);
-				new_z = sqrt(radius * radius - sqr_dist);
+				new_x = x;
+				new_z = z;
+				new_y = sqrt(diff);
 
-				printf("radius^2: %d, sqrdist: %d\n", radius * radius, sqr_dist);
+				printf("x: %d, z: %d\n", x, z);
+				printf("radius^2: %d, sqrdist: %d\n", r_2, sqr_dist);
 			}
 
 			printf("newx: %lf, newy: %lf, newz: %lf, \n", new_x,new_y,new_z);
+			Eigen::Vector3d N = {new_x, new_y, new_z};
+			Eigen::Vector3d O = R - 2 * R.dot(N) * N / (N.norm());
+
+			// t1 = a + x, t2 = b + y
+			double t1 = O(0) + new_x, t2 = O(1) + new_y;
+			double scale = sqrt( r_2 / ( t1 * t1 + t2 * t2 ) );
+			//scale /= O.norm(); // normalize original direction
+
+			double point_in_cyll = N + scale * O;
+
+			//cout << N << endl;
+			cout << t1 << " " << t2 << endl;
+			cout << scale << endl;
+			cout << O << endl;
+			//cout << R << endl;
 		}
 	}
 	
