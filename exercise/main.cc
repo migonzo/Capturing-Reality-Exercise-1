@@ -156,6 +156,7 @@ int main(int argc, const char **argv)
 
 			printf("i: %d, j: %d\n", i, j);
 			printf("newx: %lf, newy: %lf, newz: %lf, \n", new_x,new_y,new_z);
+
 			cout << "image coordinate:\n" << N << endl;
 
 			//Eigen::Vector3d O = R - 2 * R.dot(N) * N / (N.norm());
