@@ -105,7 +105,8 @@ int main(int argc, const char **argv)
 // 	if (argc != 2) throw std::runtime_error("Invalid arguments");
 // 	example(argv[1]);
 
-	const char *path = "C:/Users/migon/Documents/Capturing Reality/Exercise 2/spherical_panorama.jpg";
+	const char *path = "/home/arthur/Pictures/spherical_panorama2.jpg";
+	const char *out_path = "/home/arthur/Pictures/out_spherical_panorama.png";
 
 	image<unsigned char> img = image_io::load(path);
 	int width = img.width(), height = img.height();
@@ -116,6 +117,7 @@ int main(int argc, const char **argv)
 
 	int new_width = 1000;//PI * width; // choice
 	int new_height = height;
+	
 
 	int center_x = new_width / 2, center_z = new_height / 2;
 
@@ -125,9 +127,11 @@ int main(int argc, const char **argv)
 	Eigen::Vector3d R = {0, 1, 0};
 	//R = R / R.norm();
 
-	for (int i = 0; i < 2; i++)
+	image<unsigned char> output_img(new_width, new_height, 3);
+
+	for (int i = 0; i < new_width; i++)
 	{
-		for (int j = center_z - 2; j < center_z + 2; j++)
+		for (int j = 0; j < new_height; j++)
 		{
 			//int x = (i - center_x), z = (j - center_z);
 			double angle = 2 * PI * (i / ( (double) new_width + 1));
@@ -136,7 +140,7 @@ int main(int argc, const char **argv)
 			double b = - rc * cos(angle);
 			double c = - static_cast<double>(j) + new_height / 2;
 
-			printf("a=%lf, b=%lf, c=%lf", a, b, c);
+			//printf("a=%lf, b=%lf, c=%lf", a, b, c);
 
 			Eigen::Vector3d O = {a, b, c};
 			O = O / O.norm();
@@ -152,30 +156,51 @@ int main(int argc, const char **argv)
 			Eigen::Vector3d N = {new_x, new_y, new_z};
 			N = (radius / N.norm()) * N;
 
-			printf("=======================================\n");
+			//printf("=======================================\n");
 
-			printf("i: %d, j: %d\n", i, j);
-			printf("newx: %lf, newy: %lf, newz: %lf, \n", new_x,new_y,new_z);
+			//printf("i: %d, j: %d\n", i, j);
 
-			cout << "image coordinate:\n" << N << endl;
+			// printf("newx: %lf, newy: %lf, newz: %lf, \n", new_x,new_y,new_z);
+
+			//cout << "image coordinate:\n" << N << endl;
 
 			//Eigen::Vector3d O = R - 2 * R.dot(N) * N / (N.norm());
 
 			// t1 = a + x, t2 = b + y
 			double t1 = O(0) + new_x, t2 = O(1) + new_y;
-			double scale = sqrt( r_2 / ( t1 * t1 + t2 * t2 ) );
+			//double scale = sqrt( r_2 / ( t1 * t1 + t2 * t2 ) );
 			//scale /= O.norm(); // normalize original direction
 
 			//double point_in_cyll = N + scale * O;
 
 			//cout << N << endl;
-			cout << "a + x: " << t1 << " b + y" << t2 << endl;
-			cout << "v: " << scale << endl;
-			cout << O << endl;
+			// cout << "a + x: " << t1 << " b + y" << t2 << endl;
+			// cout << "v: " << scale << endl;
+			// cout << O << endl;
 			//cout << R << endl;
+
+
+
+			int input_x = N(0) + width / 2;
+			int input_y = N(2) + width / 2;
+
+			int output_x = (i + new_width / 2) % new_width;
+
+
+			//printf("x, y: (%d, %d)\n", input_x, input_y);
+
+			unsigned char c_red = img.at2d(input_x, input_y, 0);
+			output_img.at2d(output_x, j, 0) = c_red;
+
+			unsigned char c_green = img.at2d(input_x, input_y, 1);
+			output_img.at2d(output_x, j, 1) = c_green;
+
+			unsigned char c_blue = img.at2d(input_x, input_y, 2);
+			output_img.at2d(output_x, j, 2) = c_blue;
 		}
 	}
 	
+	image_io::save_png(output_img, out_path);
 
 	cout << "ok" << endl;
 
