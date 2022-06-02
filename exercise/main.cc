@@ -100,6 +100,104 @@ int ply_example()
 }
 */
 
+std::vector<std::string> getFilenames(const char* path) {
+	// open the .hdrgen file
+	std::string file_str = std::string(path) + "/hdrgen.txt";
+	std::ifstream data;
+	data.open(file_str);
+	if (!data.is_open()) {
+		std::cout << "Could not open " << file_str << "\n";
+		throw std::runtime_error("Could not open hdrgen file");
+	}
+
+	std::vector<std::string> filenames;
+
+	while (!data.eof()) {
+		std::string filename;
+		data >> filename;
+		filenames.push_back(filename);
+	}
+
+	return filenames;
+}
+
+image<unsigned char> convertToPanorama(image<unsigned char> input_img) {
+	int input_width = input_img.width(), input_height = input_img.height();
+	cout << input_width << " " << input_height << endl;
+
+	int radius_sphere = input_width / 2;
+
+	int output_width = input_width * PI;//PI * width; // choice
+	int output_height = input_height;
+
+	int center_x = output_width / 2, center_z = output_height / 2;
+
+	double radius_cylinder = output_width / (2 * PI);
+	//double n = 2 * rc;
+
+	Eigen::Vector3d ray_camera = { 0, 1, 0 };
+	//R = R / R.norm();
+
+	image<unsigned char> output_img(output_width, output_height, 3);
+
+	for (int i = 0; i < output_width; i++)
+	{
+		for (int j = 0; j < output_height; j++)
+		{
+			//int x = (i - center_x), z = (j - center_z);
+			double angle = 2 * PI * (i / ((double)output_width + 1));
+
+			double a = -radius_cylinder * sin(angle);
+			double b = -radius_cylinder * cos(angle);
+			double c = -static_cast<double>(j) + output_height / 2;
+
+			//printf("a=%lf, b=%lf, c=%lf", a, b, c);
+
+			Eigen::Vector3d ray_cylinder = { a, b, c };
+			ray_cylinder = ray_cylinder / ray_cylinder.norm();
+
+			a = ray_cylinder(0);
+			b = ray_cylinder(1);
+			c = ray_cylinder(2);
+
+			double normal_y = sqrt((1 - b) / 2);
+			double normal_x;
+			double normal_z;
+
+			// if the y-component of the normal is 0, then the point 
+			// on the cylinder should be exactly behind the center of the sphere
+			if (normal_y != 0.f) {
+				normal_x = -a / (2 * normal_y);
+				normal_z = -c / (2 * normal_y);
+			} 
+			// set x and z arbitrarily at the very edge of the sphere on the input image
+			else {
+				normal_x = 1.f;
+				normal_z = 0.f;
+			}
+
+			Eigen::Vector3d normal_sphere = { normal_x, normal_y, normal_z };
+			normal_sphere = (radius_sphere / normal_sphere.norm()) * normal_sphere;
+
+			int input_x = normal_sphere(0) + input_width / 2;
+			int input_y = normal_sphere(2) + input_width / 2;
+
+			int output_x = (i + output_width / 2) % output_width;
+
+			unsigned char c_red = input_img.at2d(input_x, input_y, 0);
+			output_img.at2d(output_x, j, 0) = c_red;
+
+			unsigned char c_green = input_img.at2d(input_x, input_y, 1);
+			output_img.at2d(output_x, j, 1) = c_green;
+
+			unsigned char c_blue = input_img.at2d(input_x, input_y, 2);
+			output_img.at2d(output_x, j, 2) = c_blue;
+		}
+	}
+
+	return output_img;
+}
+
 int main(int argc, const char **argv)
 {
 // 	if (argc != 2) throw std::runtime_error("Invalid arguments");
@@ -108,99 +206,28 @@ int main(int argc, const char **argv)
 	const char *path = argv[1];
 	const char *out_path = argv[2];
 
-	image<unsigned char> img = image_io::load(path);
-	int width = img.width(), height = img.height();
-	cout << width << " " << height << endl;
+	bool sequence = false;
+	if (argc > 3) {
+		std::string argv3 = argv[3];
+		sequence = argv3 == "-s";
+	}
 
-	int radius = width / 2;
-	int r_2 = radius * radius;
+	if (!sequence) {
+		image<unsigned char> output_img = convertToPanorama(image_io::load(path));
 
-	int new_width = 1000;//PI * width; // choice
-	int new_height = height;
-	
+		image_io::save_png(output_img, out_path);
+	}
+	else {
+		std::vector<std::string> files = getFilenames(path);
 
-	int center_x = new_width / 2, center_z = new_height / 2;
+		for (unsigned int i = 0; i < files.size(); ++i) {
+			std::string in_filename = std::string(path) + "/" + files[i];
+			image<unsigned char> output_img = convertToPanorama(image_io::load(in_filename.data()));
 
-	double rc = new_width / (2 * PI);
-	//double n = 2 * rc;
-
-	Eigen::Vector3d R = {0, 1, 0};
-	//R = R / R.norm();
-
-	image<unsigned char> output_img(new_width, new_height, 3);
-
-	for (int i = 0; i < new_width; i++)
-	{
-		for (int j = 0; j < new_height; j++)
-		{
-			//int x = (i - center_x), z = (j - center_z);
-			double angle = 2 * PI * (i / ( (double) new_width + 1));
-
-			double a = - rc * sin(angle);
-			double b = - rc * cos(angle);
-			double c = - static_cast<double>(j) + new_height / 2;
-
-			//printf("a=%lf, b=%lf, c=%lf", a, b, c);
-
-			Eigen::Vector3d O = {a, b, c};
-			O = O / O.norm();
-
-			a = O(0);
-			b = O(1);
-			c = O(2);
-
-			double new_y = sqrt( (1 - b) / 2);
-			double new_x = -a / (2 * new_y);
-			double new_z = -c / (2 * new_y);
-			
-			Eigen::Vector3d N = {new_x, new_y, new_z};
-			N = (radius / N.norm()) * N;
-
-			//printf("=======================================\n");
-
-			//printf("i: %d, j: %d\n", i, j);
-
-			// printf("newx: %lf, newy: %lf, newz: %lf, \n", new_x,new_y,new_z);
-
-			//cout << "image coordinate:\n" << N << endl;
-
-			//Eigen::Vector3d O = R - 2 * R.dot(N) * N / (N.norm());
-
-			// t1 = a + x, t2 = b + y
-			double t1 = O(0) + new_x, t2 = O(1) + new_y;
-			//double scale = sqrt( r_2 / ( t1 * t1 + t2 * t2 ) );
-			//scale /= O.norm(); // normalize original direction
-
-			//double point_in_cyll = N + scale * O;
-
-			//cout << N << endl;
-			// cout << "a + x: " << t1 << " b + y" << t2 << endl;
-			// cout << "v: " << scale << endl;
-			// cout << O << endl;
-			//cout << R << endl;
-
-
-
-			int input_x = N(0) + width / 2;
-			int input_y = N(2) + width / 2;
-
-			int output_x = (i + new_width / 2) % new_width;
-
-
-			//printf("x, y: (%d, %d)\n", input_x, input_y);
-
-			unsigned char c_red = img.at2d(input_x, input_y, 0);
-			output_img.at2d(output_x, j, 0) = c_red;
-
-			unsigned char c_green = img.at2d(input_x, input_y, 1);
-			output_img.at2d(output_x, j, 1) = c_green;
-
-			unsigned char c_blue = img.at2d(input_x, input_y, 2);
-			output_img.at2d(output_x, j, 2) = c_blue;
+			std::string out_filename = std::string(out_path) + "/" + files[i];
+			image_io::save_jpeg(output_img, out_filename.data());
 		}
 	}
-	
-	image_io::save_png(output_img, out_path);
 
 	cout << "ok" << endl;
 
