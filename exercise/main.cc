@@ -105,8 +105,8 @@ int main(int argc, const char **argv)
 // 	if (argc != 2) throw std::runtime_error("Invalid arguments");
 // 	example(argv[1]);
 
-	const char *path = "/home/arthur/Pictures/spherical_panorama2.jpg";
-	const char *out_path = "/home/arthur/Pictures/out_spherical_panorama.png";
+	const char *path = argv[1];
+	const char *out_path = argv[2];
 
 	image<unsigned char> img = image_io::load(path);
 	int width = img.width(), height = img.height();
