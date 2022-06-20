@@ -7,6 +7,9 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <fstream>
+#include <filesystem>
+#include <sstream>
+#include <iomanip>
 
 // #define FITTING_EXAMPLE
 
@@ -85,26 +88,85 @@ void fitting_example()
 }
 #endif
 
-int ply_example()
-{
-	std::vector<Vertex> vertices = { { 0, 0, 0, 1, 0, 0, 255, 0, 0 }, { 0, 1, 0, 1, 0, 0, 0, 255, 0 }, { 1, 0, 0, 1, 0, 0, 0, 0, 255 } };
-	std::vector<Face> faces = { { 0, 1, 2 } };
+#define NUM_INPUTS 253
 
-	std::ofstream os("out.ply", std::ios_base::binary);
-	write_ply_mesh(os, vertices, faces);
+void load_images(const char* path, const char* filename, image_b* images) {
+
+	for (int i = 0; i < NUM_INPUTS; ++i) {
+		std::stringstream stream;
+		stream << path << "/" << filename << "_" << std::setw(4) << std::setfill('0') << i << ".png";
+		std::string file = stream.str();
+
+		images[i] = image_io::load(file.c_str());
+	}
+
+}
+
+void load_directions(const char* filename, Eigen::Vector3f* directions) {
+	// open the .hdrgen file
+	std::ifstream data;
+	data.open(filename);
+	if (!data.is_open()) {
+		std::cout << "Could not open " << filename << "\n";
+		throw std::runtime_error("Could not open directions file");
+	}
+
+	// open all images named in the file
+	for (int i = 0; i < NUM_INPUTS; ++i) {
+
+		std::string line;
+		if(!std::getline(data, line)) {
+			std::cout << "Not enough lines\n";
+			throw std::runtime_error("Not enough lines");
+		}
+
+		std::istringstream stream(line);
+
+		std::string num;
+		float vec0, vec1, vec2;
+		if (!(stream >> num >> vec0 >> vec1 >> vec2)) {
+			std::cout << "Invalid vector\n";
+			throw std::runtime_error("Invalid vector");
+		}
+
+		Eigen::Vector3f vector({vec0, vec1, vec2});
+
+		directions[i] = vector;
+
+	}
+	data.close();
+}
+
+void calculateSolidAngles(const Eigen::Vector3f* directions, float* solid_angles) {
+	
+	const Eigen::Vector3f z_axis({ 0.f, 0.f, 1.f });
+	for (int i = 0; i < NUM_INPUTS; ++i) {
+		const Eigen::Vector3f direction = directions[i];
+
+		const float enumerator = (direction.cross(z_axis)).norm();
+		const float denominator = direction.norm(); // norm of z_axis is 1
+	}
+
+}
+
+inline unsigned char getR_xy(const image_b* images, const int image, const int x, const int y, const int channel) {
+	image_b current_image = images[image];
+
+	return current_image.at2d(x, y, channel);
 }
 
 int main(int argc, const char **argv)
 {
-	if (argc != 2) throw std::runtime_error("Invalid arguments");
+	const char* path = argv[1];
+	const char* filename = argv[2];
+	const char* directions_file = argv[3];
 
-	example(argv[1]);
+	std::vector<image_b> input_images(NUM_INPUTS);
+	load_images(path, filename, input_images.data());
 
-#ifdef FITTING_EXAMPLE
-	fitting_example();
-#endif
+	std::vector<Eigen::Vector3f> directions(NUM_INPUTS);
+	load_directions(directions_file, directions.data());
 
-	ply_example();
 
 	return EXIT_SUCCESS;
 }
