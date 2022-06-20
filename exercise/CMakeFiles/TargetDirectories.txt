@@ -1,0 +1,8 @@
+/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/edit_cache.dir
+/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/rebuild_cache.dir
+/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/image/CMakeFiles/image.dir
+/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/image/CMakeFiles/edit_cache.dir
+/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/image/CMakeFiles/rebuild_cache.dir
+/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/exercise/CMakeFiles/ex.dir
+/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/exercise/CMakeFiles/edit_cache.dir
+/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/exercise/CMakeFiles/rebuild_cache.dir

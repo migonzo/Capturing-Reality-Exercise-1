@@ -7,7 +7,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <fstream>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <sstream>
 #include <iomanip>
 
@@ -92,10 +92,17 @@ void fitting_example()
 
 void load_images(const char* path, const char* filename, image_b* images) {
 
+
+
+
 	for (int i = 0; i < NUM_INPUTS; ++i) {
 		std::stringstream stream;
-		stream << path << "/" << filename << "_" << std::setw(4) << std::setfill('0') << i << ".png";
+		stream << path << "/" << filename << "_" << std::setw(3) << std::setfill('0') << i << ".png";
 		std::string file = stream.str();
+
+
+		// std::cout << "FILENAME: " << file << std::endl;
+		// std::cout << "path: " << path << std::endl;
 
 		images[i] = image_io::load(file.c_str());
 	}
@@ -105,6 +112,9 @@ void load_images(const char* path, const char* filename, image_b* images) {
 void load_directions(const char* filename, Eigen::Vector3f* directions) {
 	// open the .hdrgen file
 	std::ifstream data;
+
+	//std::cout << "FILENAME: " << filename << std::endl;
+
 	data.open(filename);
 	if (!data.is_open()) {
 		std::cout << "Could not open " << filename << "\n";
@@ -145,6 +155,9 @@ void calculateSolidAngles(const Eigen::Vector3f* directions, float* solid_angles
 
 		const float enumerator = (direction.cross(z_axis)).norm();
 		const float denominator = direction.norm(); // norm of z_axis is 1
+
+		const float sine_fi = enumerator / denominator;
+		solid_angles[i] = sine_fi;
 	}
 
 }
@@ -155,17 +168,94 @@ inline unsigned char getR_xy(const image_b* images, const int image, const int x
 	return current_image.at2d(x, y, channel);
 }
 
+std::vector<image_b> reluminate_images(std::vector<image_b> input_images, std::vector<float> solid_angles)
+{
+	std::vector<image_b> reluminated_images;
+
+	int width = input_images[0].width();
+	int height = input_images[0].height();
+
+	for(int i = 0; i < NUM_INPUTS; i++)
+	{
+		image_b input_image = input_images[i];
+		float solid_angle = solid_angles[i];
+
+		image_b reluminated_image(width, height, 3);
+
+		std::cout << "solid_angle: " << solid_angle << "\n";
+
+		for (int j = 0; j < width; j++)
+		{
+			for (int k = 0; k < height; k++)
+			{
+				unsigned char r = input_image.at2d(j, k, 0);
+				unsigned char g = input_image.at2d(j, k, 1);
+				unsigned char b = input_image.at2d(j, k, 2);
+
+				// std::cout << "r: " << (int) r << "\n";
+				// std::cout << "g: " << (int) g << "\n";
+				// std::cout << "b: " << (int) b << "\n\n";
+
+				r *= solid_angle;
+				g *= solid_angle;
+				b *= solid_angle;
+
+
+				reluminated_image.at2d(j, k, 0) = r;
+				reluminated_image.at2d(j, k, 1) = g;
+				reluminated_image.at2d(j, k, 2) = b;
+
+			}			
+		}		
+
+		reluminated_images.push_back(reluminated_image);
+	}
+
+	return reluminated_images;
+}
+
 int main(int argc, const char **argv)
 {
 	const char* path = argv[1];
 	const char* filename = argv[2];
 	const char* directions_file = argv[3];
+	//const char* out_path = argv[3];
+
+	// std::cout << "FILENAME: " << filename << std::endl;
+	// std::cout << "path: " << path << std::endl;
+	// std::cout << "directions_file: " << directions_file << std::endl;
 
 	std::vector<image_b> input_images(NUM_INPUTS);
 	load_images(path, filename, input_images.data());
 
 	std::vector<Eigen::Vector3f> directions(NUM_INPUTS);
 	load_directions(directions_file, directions.data());
+
+	std::vector<float> solid_angles(NUM_INPUTS);
+	calculateSolidAngles(directions.data(), solid_angles.data());
+
+
+	std::stringstream stream;
+	stream << path << /*"/out/" <<*/ filename << "_" << std::setw(3) << std::setfill('0') << 0 << "_out.png";
+	std::string out_file = stream.str();
+
+	std::cout << out_file << "\n";
+
+	std::vector<image_b> reluminated_images = reluminate_images(input_images, solid_angles);
+	
+
+
+	image_io::save_png(reluminated_images[0], out_file.c_str());
+
+	// for (int i = 0; i < NUM_INPUTS; ++i) {
+	// 	std::stringstream stream;
+	// 	stream << path << "/out/" << filename << "_" << std::setw(3) << std::setfill('0') << i << ".png";
+	// 	std::string out_file = stream.str();
+
+	// 	//images[i] = image_io::load(file.c_str());
+	// 	image_io::save_png(reluminated_images[i], out_file.c_str());
+	// }
+
 
 
 	return EXIT_SUCCESS;

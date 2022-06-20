@@ -1,0 +1,126 @@
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_0aec1/fast && /usr/bin/make  -f CMakeFiles/cmTC_0aec1.dir/build.make CMakeFiles/cmTC_0aec1.dir/build
+make[1]: Entering directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_0aec1.dir/src.c.o
+/usr/bin/cc -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_0aec1.dir/src.c.o -c "/home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp/src.c"
+Linking C executable cmTC_0aec1
+/snap/cmake/1088/bin/cmake -E cmake_link_script CMakeFiles/cmTC_0aec1.dir/link.txt --verbose=1
+/usr/bin/cc -rdynamic CMakeFiles/cmTC_0aec1.dir/src.c.o -o cmTC_0aec1 
+CMakeFiles/cmTC_0aec1.dir/src.c.o: In function `main':
+src.c:(.text+0x3e): undefined reference to `pthread_create'
+src.c:(.text+0x4a): undefined reference to `pthread_detach'
+src.c:(.text+0x56): undefined reference to `pthread_cancel'
+src.c:(.text+0x67): undefined reference to `pthread_join'
+src.c:(.text+0x7b): undefined reference to `pthread_atfork'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_0aec1.dir/build.make:98: recipe for target 'cmTC_0aec1' failed
+make[1]: *** [cmTC_0aec1] Error 1
+make[1]: Leaving directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Makefile:127: recipe for target 'cmTC_0aec1/fast' failed
+make: *** [cmTC_0aec1/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+static void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_cancel(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_bdb56/fast && /usr/bin/make  -f CMakeFiles/cmTC_bdb56.dir/build.make CMakeFiles/cmTC_bdb56.dir/build
+make[1]: Entering directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_bdb56.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create -o CMakeFiles/cmTC_bdb56.dir/CheckFunctionExists.c.o -c /snap/cmake/1088/share/cmake-3.23/Modules/CheckFunctionExists.c
+Linking C executable cmTC_bdb56
+/snap/cmake/1088/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bdb56.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create -rdynamic CMakeFiles/cmTC_bdb56.dir/CheckFunctionExists.c.o -o cmTC_bdb56  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_bdb56.dir/build.make:98: recipe for target 'cmTC_bdb56' failed
+make[1]: *** [cmTC_bdb56] Error 1
+make[1]: Leaving directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Makefile:127: recipe for target 'cmTC_bdb56/fast' failed
+make: *** [cmTC_bdb56/fast] Error 2
+
+
+
+Determining if the function sgemm_ exists failed with the following output:
+Change Dir: /home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_01ac0/fast && /usr/bin/make  -f CMakeFiles/cmTC_01ac0.dir/build.make CMakeFiles/cmTC_01ac0.dir/build
+make[1]: Entering directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_01ac0.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=sgemm_ -o CMakeFiles/cmTC_01ac0.dir/CheckFunctionExists.c.o -c /snap/cmake/1088/share/cmake-3.23/Modules/CheckFunctionExists.c
+Linking C executable cmTC_01ac0
+/snap/cmake/1088/bin/cmake -E cmake_link_script CMakeFiles/cmTC_01ac0.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=sgemm_ -rdynamic CMakeFiles/cmTC_01ac0.dir/CheckFunctionExists.c.o -o cmTC_01ac0 
+CMakeFiles/cmTC_01ac0.dir/CheckFunctionExists.c.o: In function `main':
+CheckFunctionExists.c:(.text+0x10): undefined reference to `sgemm_'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_01ac0.dir/build.make:98: recipe for target 'cmTC_01ac0' failed
+make[1]: *** [cmTC_01ac0] Error 1
+make[1]: Leaving directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Makefile:127: recipe for target 'cmTC_01ac0/fast' failed
+make: *** [cmTC_01ac0/fast] Error 2
+
+
+
+Determining if the function cheev_ exists failed with the following output:
+Change Dir: /home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_b0820/fast && /usr/bin/make  -f CMakeFiles/cmTC_b0820.dir/build.make CMakeFiles/cmTC_b0820.dir/build
+make[1]: Entering directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_b0820.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=cheev_ -o CMakeFiles/cmTC_b0820.dir/CheckFunctionExists.c.o -c /snap/cmake/1088/share/cmake-3.23/Modules/CheckFunctionExists.c
+Linking C executable cmTC_b0820
+/snap/cmake/1088/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b0820.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=cheev_ -rdynamic CMakeFiles/cmTC_b0820.dir/CheckFunctionExists.c.o -o cmTC_b0820  /usr/lib/x86_64-linux-gnu/libblas.so /usr/lib/x86_64-linux-gnu/libf77blas.so /usr/lib/x86_64-linux-gnu/libatlas.so -lpthread -lm -ldl 
+CMakeFiles/cmTC_b0820.dir/CheckFunctionExists.c.o: In function `main':
+CheckFunctionExists.c:(.text+0x10): undefined reference to `cheev_'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_b0820.dir/build.make:101: recipe for target 'cmTC_b0820' failed
+make[1]: *** [cmTC_b0820] Error 1
+make[1]: Leaving directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Makefile:127: recipe for target 'cmTC_b0820/fast' failed
+make: *** [cmTC_b0820/fast] Error 2
+
+
+
+Determining if the function cheev_ exists failed with the following output:
+Change Dir: /home/arthur/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_e8e1d/fast && /usr/bin/make  -f CMakeFiles/cmTC_e8e1d.dir/build.make CMakeFiles/cmTC_e8e1d.dir/build
+make[1]: Entering directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_e8e1d.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=cheev_ -o CMakeFiles/cmTC_e8e1d.dir/CheckFunctionExists.c.o -c /snap/cmake/1088/share/cmake-3.23/Modules/CheckFunctionExists.c
+Linking C executable cmTC_e8e1d
+/snap/cmake/1088/bin/cmake -E cmake_link_script CMakeFiles/cmTC_e8e1d.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=cheev_ -rdynamic CMakeFiles/cmTC_e8e1d.dir/CheckFunctionExists.c.o -o cmTC_e8e1d  /usr/lib/x86_64-linux-gnu/liblapack.so /usr/lib/x86_64-linux-gnu/libblas.so /usr/lib/x86_64-linux-gnu/libf77blas.so /usr/lib/x86_64-linux-gnu/libatlas.so -fortranlibs 
+cc: error: unrecognized command line option ‘-fortranlibs’; did you mean ‘-fltrans’?
+CMakeFiles/cmTC_e8e1d.dir/build.make:102: recipe for target 'cmTC_e8e1d' failed
+make[1]: *** [cmTC_e8e1d] Error 1
+make[1]: Leaving directory '/media/arthur/SharedData/arthur2/Documents/Darmstadt/Capturing Reality/ep2/Capturing-Reality-Exercise-1/exercise/CMakeFiles/CMakeTmp'
+Makefile:127: recipe for target 'cmTC_e8e1d/fast' failed
+make: *** [cmTC_e8e1d/fast] Error 2
+
+
+
