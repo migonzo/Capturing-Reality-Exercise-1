@@ -182,7 +182,7 @@ std::vector<image_b> reluminate_images(std::vector<image_b> input_images, std::v
 
 		image_b reluminated_image(width, height, 3);
 
-		std::cout << "solid_angle: " << solid_angle << "\n";
+		//std::cout << "solid_angle: " << solid_angle << "\n";
 
 		for (int j = 0; j < width; j++)
 		{
@@ -235,26 +235,28 @@ int main(int argc, const char **argv)
 	calculateSolidAngles(directions.data(), solid_angles.data());
 
 
-	std::stringstream stream;
-	stream << path << /*"/out/" <<*/ filename << "_" << std::setw(3) << std::setfill('0') << 0 << "_out.png";
-	std::string out_file = stream.str();
+	// std::stringstream stream;
+	// stream << path << "/out/" << filename << "_" << std::setw(3) << std::setfill('0') << 0 << "_out.png";
+	// std::string out_file = stream.str();
 
-	std::cout << out_file << "\n";
+	
 
 	std::vector<image_b> reluminated_images = reluminate_images(input_images, solid_angles);
 	
 
 
-	image_io::save_png(reluminated_images[0], out_file.c_str());
+	//image_io::save_png(reluminated_images[0], out_file.c_str());
 
-	// for (int i = 0; i < NUM_INPUTS; ++i) {
-	// 	std::stringstream stream;
-	// 	stream << path << "/out/" << filename << "_" << std::setw(3) << std::setfill('0') << i << ".png";
-	// 	std::string out_file = stream.str();
+	for (int i = 0; i < NUM_INPUTS; ++i) {
+		std::stringstream stream;
+		stream << path << "/out/" << filename << "_" << std::setw(3) << std::setfill('0') << i << ".png";
+		std::string out_file = stream.str();
 
-	// 	//images[i] = image_io::load(file.c_str());
-	// 	image_io::save_png(reluminated_images[i], out_file.c_str());
-	// }
+		//images[i] = image_io::load(file.c_str());
+		image_io::save_png(reluminated_images[i], out_file.c_str());
+
+		std::cout << out_file << "\n";
+	}
 
 
 
