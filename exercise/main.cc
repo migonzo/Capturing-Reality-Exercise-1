@@ -162,7 +162,7 @@ void calculateSolidAngles(const Eigen::Vector3d* directions, double* solid_angle
 
 }
 
-void determineEnvironmentMap(const image_b image, const Eigen::Vector3d* directions, Eigen::Vector3d* environment_map) {
+void determineEnvironmentMap(const image_b image, const Eigen::Vector3d* directions, Eigen::Vector3d* environment_map, const Eigen::Matrix3d displacement = Eigen::Matrix3d::Identity()) {
 	int input_width = image.width(), input_height = image.height();
 
 	int radius_sphere = input_width / 2;
@@ -170,7 +170,7 @@ void determineEnvironmentMap(const image_b image, const Eigen::Vector3d* directi
 	for (int i = 0; i < NUM_INPUTS; i++)
 	{
 
-		Eigen::Vector3d direction = directions[i];
+		Eigen::Vector3d direction = displacement * directions[i];
 
 		double a = direction(0);
 		double b = direction(1);
