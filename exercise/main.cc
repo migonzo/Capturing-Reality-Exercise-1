@@ -110,6 +110,11 @@ inline Eigen::Matrix3d rotationMatrixZ(const double angle) {
 	return rot_mat;
 }
 
+inline double toUnitInterval(const unsigned char value) {
+	const double value_d = static_cast<double>(value);
+	return value_d / 255.f;
+}
+
 void determineEnvironmentMap(const image_b image, const Eigen::Vector3d* directions, const double* solid_angles, Eigen::Vector3d* environment_map, const Eigen::Matrix3d displacement = Eigen::Matrix3d::Identity()) {
 	int input_width = image.width(), input_height = image.height();
 
@@ -146,20 +151,17 @@ void determineEnvironmentMap(const image_b image, const Eigen::Vector3d* directi
 		int input_x = normal_sphere(0) + input_width / 2;
 		int input_y = normal_sphere(2) + input_width / 2;
 
-		double c_red = image.at2d(input_x, input_y, 0);
+		double c_red = toUnitInterval(image.at2d(input_x, input_y, 0));
 
-		double c_green = image.at2d(input_x, input_y, 1);
+		double c_green = toUnitInterval(image.at2d(input_x, input_y, 1));
 
-		double c_blue = image.at2d(input_x, input_y, 2);
+		double c_blue = toUnitInterval(image.at2d(input_x, input_y, 2));
 
 		const double solid_angle = solid_angles[i];
 
 		environment_map[i] = { c_red * solid_angle, c_green * solid_angle, c_blue * solid_angle };
+		//environment_map[i] = {c_red, c_green, c_blue};
 	}
-}
-
-void normalize_environment_map(const Eigen::Vector3d* env_map, const double* solid_angles) {
-
 }
 
 inline unsigned char getR_xy(const image_b* images, const int image, const int x, const int y, const int channel) {
@@ -204,9 +206,9 @@ void reluminate_images(const std::vector<image_b> input_images, const image_b en
 				for (int h = 0; h < NUM_INPUTS; ++h) {
 					const image_b* input_image = &input_images[h];
 
-					const double r_d = input_image->at2d(j, k, 0);
-					const double g_d = input_image->at2d(j, k, 1);
-					const double b_d = input_image->at2d(j, k, 2);
+					const double r_d = toUnitInterval(input_image->at2d(j, k, 0));
+					const double g_d = toUnitInterval(input_image->at2d(j, k, 1));
+					const double b_d = toUnitInterval(input_image->at2d(j, k, 2));
 
 					// std::cout << "r: " << (int) r << "\n";
 					// std::cout << "g: " << (int) g << "\n";
@@ -219,6 +221,13 @@ void reluminate_images(const std::vector<image_b> input_images, const image_b en
 					b += b_d * map_vector(2);
 				}
 				
+				if (r > 255.f)
+					printf("(%i, %i) red value is %f\n", j, k, r);
+				if (g > 255.f)
+					printf("(%i, %i) green value is %f\n", j, k, g);
+				if (b > 255.f)
+					printf("(%i, %i) blue value is %f\n", j, k, b);
+
 				reluminated_image.at2d(j, k, 0) = static_cast<unsigned char>(r);
 				reluminated_image.at2d(j, k, 1) = static_cast<unsigned char>(g);
 				reluminated_image.at2d(j, k, 2) = static_cast<unsigned char>(b);
