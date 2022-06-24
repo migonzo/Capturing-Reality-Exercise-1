@@ -16,7 +16,12 @@
 #define PI 3.14159265851979323
 #define TWO_PI 6.28318530717958647
 
-void load_images(const char* path, const char* filename, image_b* images, const int naming_scheme = 3) {
+inline double toUnitInterval(const unsigned char value) {
+	const double value_d = static_cast<double>(value);
+	return value_d / 255.f;
+}
+
+void load_images(const char* path, const char* filename, image<double>* images, const int naming_scheme = 3) {
 
 	for (int i = 0; i < NUM_INPUTS; ++i) {
 		std::stringstream stream;
@@ -26,7 +31,16 @@ void load_images(const char* path, const char* filename, image_b* images, const 
 		// std::cout << "FILENAME: " << file << std::endl;
 		// std::cout << "path: " << path << std::endl;
 
-		images[i] = image_io::load(file.c_str());
+		image_b temp_image = image_io::load(file.c_str());
+		const int width = temp_image.width();
+		const int height = temp_image.height();
+		for (int j = 0; j < width; ++j) {
+			for (int k = 0; k < height; ++k) {
+				images[i].at2d(j, k, 0) = toUnitInterval(temp_image.at2d(j, k, 0));
+				images[i].at2d(j, k, 1) = toUnitInterval(temp_image.at2d(j, k, 1));
+				images[i].at2d(j, k, 2) = toUnitInterval(temp_image.at2d(j, k, 2));
+			}
+		}
 		std::cout << "Loaded image " << (i + 1) << " of " << NUM_INPUTS << "\n";
 	}
 	std::cout << "\n";
@@ -110,11 +124,6 @@ inline Eigen::Matrix3d rotationMatrixZ(const double angle) {
 	return rot_mat;
 }
 
-inline double toUnitInterval(const unsigned char value) {
-	const double value_d = static_cast<double>(value);
-	return value_d / 255.f;
-}
-
 void determineEnvironmentMap(const image_b image, const Eigen::Vector3d* directions, const double* solid_angles, Eigen::Vector3d* environment_map, const Eigen::Matrix3d displacement = Eigen::Matrix3d::Identity()) {
 	int input_width = image.width(), input_height = image.height();
 
@@ -170,7 +179,7 @@ inline unsigned char getR_xy(const image_b* images, const int image, const int x
 	return current_image.at2d(x, y, channel);
 }
 
-void reluminate_images(const std::vector<image_b> input_images, const image_b env_img, const std::vector<Eigen::Vector3d> directions, const char* out_path, const char* filename, std::vector<double> solid_angles)
+void reluminate_images(const std::vector<image<double>> input_images, const image_b env_img, const std::vector<Eigen::Vector3d> directions, const char* out_path, const char* filename, std::vector<double> solid_angles)
 {
 	int width = input_images[0].width();
 	int height = input_images[0].height();
@@ -204,11 +213,11 @@ void reluminate_images(const std::vector<image_b> input_images, const image_b en
 				double r = 0.0, g = 0.0, b = 0.0;
 
 				for (int h = 0; h < NUM_INPUTS; ++h) {
-					const image_b* input_image = &input_images[h];
+					const image<double>* input_image = &input_images[h];
 
-					const double r_d = toUnitInterval(input_image->at2d(j, k, 0));
-					const double g_d = toUnitInterval(input_image->at2d(j, k, 1));
-					const double b_d = toUnitInterval(input_image->at2d(j, k, 2));
+					const double r_d = input_image->at2d(j, k, 0);
+					const double g_d = input_image->at2d(j, k, 1);
+					const double b_d = input_image->at2d(j, k, 2);
 
 					// std::cout << "r: " << (int) r << "\n";
 					// std::cout << "g: " << (int) g << "\n";
@@ -221,12 +230,12 @@ void reluminate_images(const std::vector<image_b> input_images, const image_b en
 					b += b_d * map_vector(2);
 				}
 				
-				if (r > 255.f)
+				/*if (r > 255.f)
 					printf("(%i, %i) red value is %f\n", j, k, r);
 				if (g > 255.f)
 					printf("(%i, %i) green value is %f\n", j, k, g);
 				if (b > 255.f)
-					printf("(%i, %i) blue value is %f\n", j, k, b);
+					printf("(%i, %i) blue value is %f\n", j, k, b);*/
 
 				reluminated_image.at2d(j, k, 0) = static_cast<unsigned char>(r);
 				reluminated_image.at2d(j, k, 1) = static_cast<unsigned char>(g);
@@ -268,13 +277,27 @@ int main(int argc, const char **argv)
 	if(argc > 6)
 		naming_scheme = std::stoi(std::string(argv[6]));
 
-
+	int width, height;
 	// std::cout << "FILENAME: " << filename << std::endl;
 	// std::cout << "path: " << path << std::endl;
 	// std::cout << "directions_file: " << directions_file << std::endl;
+	if (argc > 6) {
+		std::stringstream stream;
+		stream << path << "/" << filename << "_" << std::setw(naming_scheme) << std::setfill('0') << 0 << ".png";
+		image_b test = image_io::load_png((stream.str()).c_str());
+		width = test.width();
+		height = test.height();
+	}
+	else {
+		std::stringstream stream;
+		stream << path << "/" << filename << "_" << std::setw(3) << std::setfill('0') << 0 << ".png";
+		image_b test = image_io::load_png((stream.str()).c_str());
+		width = test.width();
+		height = test.height();
+	}
 
-	std::vector<image_b> input_images(NUM_INPUTS);
-	if(argc > 5)
+	std::vector<image<double>> input_images(NUM_INPUTS, image<double>(width, height, 3));
+	if(argc > 6)
 		load_images(path, filename, input_images.data(), naming_scheme);
 	else
 		load_images(path, filename, input_images.data());
