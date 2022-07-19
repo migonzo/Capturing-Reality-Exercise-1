@@ -70,8 +70,10 @@ std::vector<image_f> load_depth_images(const char* path, const unsigned int num)
 }
 
 inline Eigen::Vector3d to_world_coordinates(const Eigen::Vector2d x_pixel, const camera_info info, const double depth) {
-	const Eigen::Vector3d x_dist(0.0,0.0,0.0);//= (x_pixel - info.principal_point) / info.focal_length;
-	const Eigen::Vector3d x_camera = x_dist.normalized() * depth;
+	const Eigen::Vector2d x_dist = (x_pixel - info.principal_point) / info.focal_length;
+	//const Eigen::Vector3d x_camera = x_dist.normalized() * depth;
+	// maybe wrong
+	const Eigen::Vector3d x_camera(x_dist(0) * depth, x_dist(1) * depth, depth);
 	return info.rotation.transpose() * (x_camera - info.translation);
 }
 
