@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<opencv_storage>
+    <!-- <Sequence version = '2.0'>
+        <CameraCapture loop='2' fps='30.00' pixelFormat='YUYV' >
+            <Intrinsics w='640' h='480' fx='506.724396' fy='504.880859' px='319.880646' py='239.459396'
+        rd='0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000' />
+        </CameraCapture>
+        <Elements source='camera'>
+            <Element timestamp='481771871356193' presTimestamp='481771871356193' >
+                <Frame filename='camera_frame_0000.png' > 
+                    <Intrinsics w='640' h='480' fx='0.9040955901' fy='0.9040955901' px='0.5' py='0.5'
+            rd='0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000' />
+                </Frame>
+                <Pose x='0.138495' y='0.516533' z='-0.281780' r0='0.9987769723' r1='-0.009860152379' r2='0.04849850386'
+            r3='0.004590753466' r4='0.9941861033' r5='0.1075916961' r6='-0.04927686602' r7='-0.1072363779' r8='0.9930131435' > 
+                    <TrackableStatus validity='VALID' info='VALID' />
+                </Pose>
+            </Element>
+        </Elements>
+    </Sequence> -->
+</opencv_storage>
