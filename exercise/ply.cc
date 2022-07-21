@@ -12,3 +12,9 @@ void write_ply_mesh(std::ostream &os, std::vector<Vertex> &vertices, std::vector
 		os.write((const char*)&faces[i], 3 * 4);
 	}
 }
+
+void write_ply_point_cloud(std::ostream& os, std::vector<Vertex_pc>& vertices)
+{
+	os << "ply\nformat binary_little_endian 1.0\nelement vertex " << vertices.size() << "\nproperty float x\nproperty float y\nproperty float z\nend_header\n";
+	for (int i = 0; i < vertices.size(); ++i) os.write((const char*)&vertices[i], 3 * 4);
+}
