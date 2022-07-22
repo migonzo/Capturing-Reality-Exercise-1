@@ -122,8 +122,17 @@ std::pair<std::vector<Eigen::Vector3d>, std::vector<Eigen::Vector3d>> create_3d_
 		const camera_info info = infos[i];
 		const Eigen::Vector2d dimensions(image.width(), image.height());
 
-		points.push_back(info.rotation.transpose() * (Eigen::Vector3d(0.0, 0.0, 0.0) - info.translation));
-		//points.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+		//points.push_back(info.rotation.transpose() * (Eigen::Vector3d(0.0, 0.0, 0.0) - info.translation));
+		//points.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));-2.0, -4.0, 6.0, 2.0, 2.0, 10.0
+		// AABB
+		/*points.push_back(Eigen::Vector3d(-2.0, -4.0, 6.0));
+		points.push_back(Eigen::Vector3d(-2.0, -4.0, 10.0));
+		points.push_back(Eigen::Vector3d(-2.0, 2.0, 6.0));
+		points.push_back(Eigen::Vector3d(-2.0, 2.0, 10.0));
+		points.push_back(Eigen::Vector3d(2.0, -4.0, 6.0));
+		points.push_back(Eigen::Vector3d(2.0, -4.0, 10.0));
+		points.push_back(Eigen::Vector3d(2.0, 2.0, 6.0));
+		points.push_back(Eigen::Vector3d(2.0, 2.0, 10.0));*/
 		for (int j = 0; j < image.width(); ++j) {
 			for (int h = 0; h < image.height(); ++h) {
 				const double depth = image.at2d(j, h);
@@ -176,7 +185,7 @@ std::pair<std::vector<Eigen::Vector3d>, std::vector<Eigen::Vector3d>> create_3d_
 					y2 = points[j + h * image.width()];
 				}
 
-				normals.push_back(get_normal(x1, x2, y1, y2));
+				normals.push_back(-get_normal(x1, x2, y1, y2));
 			}
 		}
 
@@ -241,7 +250,7 @@ inline Eigen::Vector3d rotate_to_lcs(const Eigen::Vector3d& x, const Eigen::Matr
 
 inline double get_W(const Eigen::Vector3d& x, const std::vector<Eigen::Matrix3d>& rotations, const std::vector<Eigen::Vector3d>& points) {
 	double W = 0.0;
-#pragma omp parallel for num_threads(16)
+//#pragma omp parallel for num_threads(64)
 	for (int i = 0; i < points.size(); ++i) {
 		W += get_weight(rotate_to_lcs(x, rotations[i], points[i]));
 	}
@@ -261,8 +270,10 @@ inline double implicit_F(const Eigen::Vector3d& x, const std::vector<Eigen::Matr
 	if (W == 0.0)
 		return 10000.0;
 	double result = 0.0;
-#pragma omp parallel for num_threads(16)
+//#pragma omp parallel for num_threads(64)
 	for (int i = 0; i < rotations.size(); ++i) {
+		//if (i == 0)
+		//	std::cout << "implicit_F " << omp_get_num_threads() << " threads\n";
 		//std::cout << omp_get_num_threads() << "\n";
 		const Eigen::Vector3d x_i = rotate_to_lcs(x, rotations[i], points[i]);
 		const double weight = get_weight(x_i);
@@ -278,18 +289,17 @@ std::vector<double> iterate_voxels(
 	const std::vector<Eigen::Matrix3d> rotations, 
 	const double min_x, const double min_y, const double min_z,
 	const double max_x, const double max_y, const double max_z,
-	const int dim_x, const int dim_y, const int dim_z) 
+	const int divisor) 
 {
-	std::vector<double> result;
-	result.reserve(dim_x * dim_y * dim_z);
-
 	/*const double step_x = (max_x - min_x) / static_cast<double>(dim_x);
 	const double step_y = (max_y - min_y) / static_cast<double>(dim_y);
 	const double step_z = (max_z - min_z) / static_cast<double>(dim_z);*/
 
-	const double start_x = std::floor(min_x + 0.5);
-	const double start_y = std::floor(min_y + 0.5);
-	const double start_z = std::floor(min_z + 0.5);
+	const double step = 1.0 / static_cast<double>(divisor);
+
+	const double start_x = std::floor(min_x) + step / 2.0;
+	const double start_y = std::floor(min_y) + step / 2.0;
+	const double start_z = std::floor(min_z) + step / 2.0;
 
 	const int start_i = std::floor(min_x);
 	const int start_j = std::floor(min_y);
@@ -299,16 +309,27 @@ std::vector<double> iterate_voxels(
 	const int end_j = std::ceil(max_y);
 	const int end_k = std::ceil(max_z);
 
-	for (int i = start_i; i < end_i; ++i) {
-		for (int j = start_j; j < end_j; ++j) {
-			for (int k = start_k; k < end_k; ++k) {
-				const Eigen::Vector3d x(start_x + i * 1.0, start_y + j * 1.0, start_z + k * 1.0);
+	const int range_i = (end_i - start_i) * divisor;
+	const int range_j = (end_j - start_j) * divisor;
+	const int range_k = (end_k - start_k) * divisor;
+
+	std::vector<double> result(range_i * range_j * range_k);
+	//result.reserve(range_i * range_j * range_k);
+
+#pragma omp parallel for //num_threads(16)
+	for (int i = 0; i < range_i; ++i) {
+		if (i == 0)
+			std::cout << omp_get_num_threads() << "\n";
+		for (int j = 0; j < range_j; ++j) {
+			for (int k = 0; k < range_k; ++k) {
+				const Eigen::Vector3d x(start_x + i * step, start_y + j * step, start_z + k * step);
 				const double res = implicit_F(x, rotations, points);
-				result.push_back(res);
-				std::cout << i << " " << j << " " << k << " " << res << "\n";
-				
+				result[i * range_j * range_k + j * range_k + k] = res;
+				//std::cout << x << res << "\n";
 			}
+			//std::cout << i + 1 << "/" << range_i << " " << j + 1 << "/" << range_j << "\n";
 		}
+		std::cout << i + 1 << "/" << range_i << "\n\n";
 	}
 
 	return result;
@@ -370,7 +391,8 @@ int main(int argc, const char **argv)
 	const std::vector<Eigen::Vector3d> normals = result.second;
 
 	const std::vector<Eigen::Matrix3d> matrices = get_rotation_matrices(normals);
-	const std::vector<double> voxel_grid = iterate_voxels(points, matrices, -2.0, -4.0, 6.0, 2.0, 2.0, 10.0, 10, 10, 10);
+	//const std::vector<double> voxel_grid = iterate_voxels(points, matrices, -2.0, -4.0, 6.0, 2.0, 2.0, 10.0, 2);
+	const std::vector<double> voxel_grid = iterate_voxels(points, matrices, min_x, min_y, min_z, max_x, max_y, max_z, 2);
 	write_grid_file(path, voxel_grid);
 
 	return EXIT_SUCCESS;
