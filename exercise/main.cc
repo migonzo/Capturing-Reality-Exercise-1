@@ -11,7 +11,7 @@
 #include <iomanip>
 #include <omp.h>
 
-#define SIGMA 1.0
+#define SIGMA 0.1
 
 struct camera_info {
 	double focal_length;
@@ -112,94 +112,172 @@ inline Eigen::Vector3d get_normal(const Eigen::Vector3d& x_1, const Eigen::Vecto
 	return x_diff.cross(y_diff).normalized();
 }
 
-std::pair<std::vector<Eigen::Vector3d>, std::vector<Eigen::Vector3d>> create_3d_points(image_f const * images, camera_info const * infos, const unsigned int num_images, const unsigned int num_points) {
+std::vector<Eigen::Vector3d> create_3d_points(
+	image_f const * images, 
+	camera_info const * infos, 
+	const unsigned int num_images, 
+	const unsigned int num_points, 
+	std::vector<Eigen::Vector3d>& normals, 
+	std::vector<double>& scales,
+	const bool scale,
+	const bool no_normals
+) {
 	std::vector<Eigen::Vector3d> points;
 	points.reserve(num_points);
-	std::vector<Eigen::Vector3d> normals;
-	normals.reserve(num_points);
+	if(!no_normals)
+		normals.reserve(num_points);
+	if(scale)
+		scales.reserve(num_points);
 	for (int i = 0; i < num_images; ++i) {
 		const image_f image = images[i];
 		const camera_info info = infos[i];
 		const Eigen::Vector2d dimensions(image.width(), image.height());
 
-		//points.push_back(info.rotation.transpose() * (Eigen::Vector3d(0.0, 0.0, 0.0) - info.translation));
-		//points.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));-2.0, -4.0, 6.0, 2.0, 2.0, 10.0
-		// AABB
-		/*points.push_back(Eigen::Vector3d(-2.0, -4.0, 6.0));
-		points.push_back(Eigen::Vector3d(-2.0, -4.0, 10.0));
-		points.push_back(Eigen::Vector3d(-2.0, 2.0, 6.0));
-		points.push_back(Eigen::Vector3d(-2.0, 2.0, 10.0));
-		points.push_back(Eigen::Vector3d(2.0, -4.0, 6.0));
-		points.push_back(Eigen::Vector3d(2.0, -4.0, 10.0));
-		points.push_back(Eigen::Vector3d(2.0, 2.0, 6.0));
-		points.push_back(Eigen::Vector3d(2.0, 2.0, 10.0));*/
 		for (int j = 0; j < image.width(); ++j) {
 			for (int h = 0; h < image.height(); ++h) {
 				const double depth = image.at2d(j, h);
 				if (depth == 0.0)
 					continue;
 				const Eigen::Vector2d x_pixel(j, h);
-				points.push_back(to_world_coordinates(x_pixel, info, depth, dimensions));
+				const Eigen::Vector3d x_point = to_world_coordinates(x_pixel, info, depth, dimensions);
+				if (!(x_point(0) > -2.0 && x_point(0) < 2.0
+					&& x_point(1) > -2.0 && x_point(1) < 4.0
+					&& x_point(2) > -6.0 && x_point(2) < 10.0))
+					continue;
+				points.push_back(x_point);
+
+				if (scale) {
+					// calculate footprint
+					const Eigen::Vector2d x_0_pixel(j, h);
+					const Eigen::Vector2d x_1_pixel(j + 1, h);
+					const Eigen::Vector3d x_0 = to_world_coordinates(x_0_pixel, info, depth, dimensions);
+					const Eigen::Vector3d x_1 = to_world_coordinates(x_1_pixel, info, depth, dimensions);
+					const double footprint = 4.0 * (x_0 - x_1).norm();
+					scales.push_back(footprint);
+				}
 			}
 		}
 
 		std::cout << "Done with points for image " << i << "\n";
+		if (!no_normals) {
+			for (int j = 0; j < image.width(); ++j) {
+				for (int h = 0; h < image.height(); ++h) {
+					const double depth = image.at2d(j, h);
+					if (depth == 0.0)
+						continue;
+					const Eigen::Vector2d x_test(j, h);
+					const Eigen::Vector3d x_point = to_world_coordinates(x_test, info, depth, dimensions);
+					if (!(x_point(0) > -2.0 && x_point(0) < 2.0
+						&& x_point(1) > -2.0 && x_point(1) < 4.0
+						&& x_point(2) > -6.0 && x_point(2) < 10.0))
+						continue;
+					Eigen::Vector3d x1, x2, y1, y2;
+					if (j > 0) {
+						const Eigen::Vector2d x_pixel(j - 1, h);
+						x1 = to_world_coordinates(x_pixel, info, image.at2d(j - 1, h), dimensions);
+					}
+					else {
+						x1 = points[j + h * image.width()];
+					}
+					if (j < image.width() - 1) {
+						const Eigen::Vector2d x_pixel(j + 1, h);
+						x2 = to_world_coordinates(x_pixel, info, image.at2d(j + 1, h), dimensions);
+					}
+					else {
+						x2 = points[j + h * image.width()];
+					}
 
-		for (int j = 0; j < image.width(); ++j) {
-			for (int h = 0; h < image.height(); ++h) {
-				const double depth = image.at2d(j, h);
-				if (depth == 0.0)
-					continue;
-				Eigen::Vector3d x1, x2, y1, y2;
-				if (j > 0) {
-					//x1 = points[j - 1 + h * image.width()];
-					const Eigen::Vector2d x_pixel(j - 1, h);
-					x1 = to_world_coordinates(x_pixel, info, image.at2d(j-1,h), dimensions);
-				}
-				else {
-					x1 = points[j + h * image.width()];
-				}
-				if (j < image.width() - 1) {
-					//x2 = points[j + 1 + h * image.width()];
-					const Eigen::Vector2d x_pixel(j + 1, h);
-					x2 = to_world_coordinates(x_pixel, info, image.at2d(j + 1, h), dimensions);
-				}
-				else {
-					x2 = points[j + h * image.width()];
-				}
+					if (h > 0) {
+						const Eigen::Vector2d x_pixel(j, h - 1);
+						y1 = to_world_coordinates(x_pixel, info, image.at2d(j, h - 1), dimensions);
+					}
+					else {
+						y1 = points[j + h * image.width()];
+					}
+					if (h < image.height() - 1) {
+						const Eigen::Vector2d x_pixel(j, h + 1);
+						y2 = to_world_coordinates(x_pixel, info, image.at2d(j, h + 1), dimensions);
+					}
+					else {
+						y2 = points[j + h * image.width()];
+					}
 
-				if (h > 0) {
-					//y1 = points[j + (h - 1) * image.width()];
-					const Eigen::Vector2d x_pixel(j, h - 1);
-					y1 = to_world_coordinates(x_pixel, info, image.at2d(j, h - 1), dimensions);
+					normals.push_back(-get_normal(x1, x2, y1, y2));
 				}
-				else {
-					y1 = points[j + h * image.width()];
-				}
-				if (h < image.height() - 1) {
-					//y2 = points[j + (h + 1) * image.width()];
-					const Eigen::Vector2d x_pixel(j, h + 1);
-					y2 = to_world_coordinates(x_pixel, info, image.at2d(j, h + 1), dimensions);
-				}
-				else {
-					y2 = points[j + h * image.width()];
-				}
-
-				normals.push_back(-get_normal(x1, x2, y1, y2));
 			}
 		}
 
 		std::cout << "Done with image " << i << "\n";
 	}
 
-	return std::pair<std::vector<Eigen::Vector3d>, std::vector<Eigen::Vector3d>>(points, normals);
+	return points;
+}
+
+inline Eigen::Vector3d get_normal_unstructured(const std::vector<Eigen::Vector3d>& Nbhd) {
+	Eigen::Vector3d o_i = Eigen::Vector3d::Zero();
+	for (const auto& y : Nbhd)
+		o_i += y;
+	o_i /= Nbhd.size();
+	Eigen::Matrix3d CV = Eigen::Matrix3d::Zero();
+	for (const auto& y : Nbhd) {
+		const Eigen::Vector3d temp = y - o_i;
+		const Eigen::Matrix3d outer_product = temp * temp.transpose();
+		CV += outer_product;
+	}
+	Eigen::EigenSolver<Eigen::Matrix3d> solver(CV);
+	const Eigen::Matrix3d evs = solver.eigenvectors().real();
+	const Eigen::Vector3d ev_3(evs.col(2));
+
+	return -ev_3;
+}
+
+inline void move_up(std::vector<Eigen::Vector3d>& closest, std::vector<double>& distances, int start, int k) {
+#pragma unroll
+	for (int i = k - 2; i >= start; --i) {
+			closest[i+1] = closest[i];
+			distances[i+1] = distances[i];
+	}
+}
+
+inline void get_normals_unstructured(const std::vector<Eigen::Vector3d>& points, std::vector<Eigen::Vector3d>& normals) {
+	const int k = 5;
+	normals.resize(points.size());
+#pragma omp parallel for num_threads(16)
+	for (int i = 0; i < points.size(); ++i) {
+		// find k closest points
+		std::vector<Eigen::Vector3d> closest(k);
+		std::vector<double> distances(k);
+		const Eigen::Vector3d point = points[i];
+		int num = 0;
+		for (const auto& p_i : points) {
+#pragma unroll
+			const double distance = (p_i - point).norm();
+			for (int j = 0; j < k; ++j) {
+				if (num - 1 < j) {
+					closest[j] = p_i;
+					++num;
+					break;
+				}
+				if (distance < distances[j]) {
+					move_up(closest, distances, j, k);
+					break;
+				}
+			}
+		}
+		normals[i] = get_normal_unstructured(closest);
+	}
+	std::cout << "Done with normals\n";
 }
 
 inline Eigen::Matrix3d get_rotation_matrix(const Eigen::Vector3d& normal) {
 	const Eigen::Vector3d x_unit = Eigen::Vector3d::UnitX();
 	const Eigen::Vector3d v = normal.cross(x_unit);
+	if (v.isZero())
+		return Eigen::Matrix3d::Identity();
 	const double sine = v.norm();
 	const double cosine = normal.dot(x_unit);
+	if (fabs(cosine) < 0.0001)
+		return -Eigen::Matrix3d::Identity();
 	Eigen::Matrix3d cross_matrix;
 	cross_matrix << 
 		0.0, -v(2), v(1),
@@ -244,6 +322,30 @@ inline double get_weight(const Eigen::Vector3d& X) {
 	return w_x * w_yz;
 }
 
+inline double get_weight_scaled(const Eigen::Vector3d& X, const double scale) {
+	const double x = X(0);
+	double w_x = 0.0;
+	if (x >= -3 * scale && x < 0.0) {
+		w_x = (1.0 / 9.0) * ((x * x) / (scale * scale)) + (2.0 / 3.0) * (x / scale) + 1.0;
+	}
+	else if (x < 3 * scale) {
+		w_x = (2.0 / 27.0) * ((x * x * x) / (scale * scale * scale)) - (1.0 / 3.0) * ((x * x) / (scale * scale)) + 1.0;
+	}
+	else {
+		return 0.0;
+	}
+	double w_yz = 0.0;
+	const double r = sqrt(X(1) * X(1) + X(2) * X(2));
+	if (r < 3 * scale) {
+		w_yz = (2.0 / 27.0) * ((r * r * r) / (scale * scale * scale)) - (1.0 / 3.0) * ((r * r) / (scale * scale)) + 1.0;
+	}
+	else {
+		return 0.0;
+	}
+
+	return w_x * w_yz;
+}
+
 inline Eigen::Vector3d rotate_to_lcs(const Eigen::Vector3d& x, const Eigen::Matrix3d& rot, const Eigen::Vector3d& pos) {
 	return rot * (x - pos);
 }
@@ -258,9 +360,26 @@ inline double get_W(const Eigen::Vector3d& x, const std::vector<Eigen::Matrix3d>
 	return W;
 }
 
+inline double get_W_scaled(const Eigen::Vector3d& x, const std::vector<Eigen::Matrix3d>& rotations, const std::vector<Eigen::Vector3d>& points, const std::vector<double>& scales) {
+	double W = 0.0;
+	//#pragma omp parallel for num_threads(64)
+	for (int i = 0; i < points.size(); ++i) {
+		W += get_weight_scaled(rotate_to_lcs(x, rotations[i], points[i]), scales[i]);
+	}
+
+	return W;
+}
+
 inline double basis_f(const Eigen::Vector3d& x) {
 	const double first = x(0) / (std::pow(SIGMA, 4) * 2 * EIGEN_PI);
 	const double second = std::exp(-(1.0 / (2 * SIGMA * SIGMA)) * x.squaredNorm());
+
+	return first * second;
+}
+
+inline double basis_f_scaled(const Eigen::Vector3d& x, const double scale) {
+	const double first = x(0) / (std::pow(scale, 4) * 2 * EIGEN_PI);
+	const double second = std::exp(-(1.0 / (2 * scale * scale)) * x.squaredNorm());
 
 	return first * second;
 }
@@ -272,9 +391,6 @@ inline double implicit_F(const Eigen::Vector3d& x, const std::vector<Eigen::Matr
 	double result = 0.0;
 //#pragma omp parallel for num_threads(64)
 	for (int i = 0; i < rotations.size(); ++i) {
-		//if (i == 0)
-		//	std::cout << "implicit_F " << omp_get_num_threads() << " threads\n";
-		//std::cout << omp_get_num_threads() << "\n";
 		const Eigen::Vector3d x_i = rotate_to_lcs(x, rotations[i], points[i]);
 		const double weight = get_weight(x_i);
 		if (weight > 0.0) {
@@ -284,16 +400,34 @@ inline double implicit_F(const Eigen::Vector3d& x, const std::vector<Eigen::Matr
 	return result / W;
 }
 
+inline double implicit_F_scaled(const Eigen::Vector3d& x, const std::vector<Eigen::Matrix3d>& rotations, const std::vector<Eigen::Vector3d>& points, const std::vector<double>& scales) {
+	const double W = get_W_scaled(x, rotations, points, scales);
+	if (W == 0.0)
+		return 10000.0;
+	double result = 0.0;
+	//#pragma omp parallel for num_threads(64)
+	for (int i = 0; i < rotations.size(); ++i) {
+		const Eigen::Vector3d x_i = rotate_to_lcs(x, rotations[i], points[i]);
+		const double weight = get_weight_scaled(x_i, scales[i]);
+		if (weight > 0.0) {
+			result += weight * basis_f_scaled(x_i, scales[i]);
+		}
+	}
+	return result / W;
+}
+
+void write_point_cloud(const char* path, const std::vector<Eigen::Vector3d> vertices, char* filename = nullptr);
+void write_point_cloud_normals(const char* path, const std::vector<Eigen::Vector3d> vertices, const std::vector<Eigen::Vector3d> normals, char* filename = nullptr);
+
 std::vector<double> iterate_voxels(
 	const std::vector<Eigen::Vector3d> points, 
 	const std::vector<Eigen::Matrix3d> rotations, 
+	const std::vector<double> scales,
 	const double min_x, const double min_y, const double min_z,
 	const double max_x, const double max_y, const double max_z,
-	const int divisor) 
+	const int divisor,
+	const bool scale) 
 {
-	/*const double step_x = (max_x - min_x) / static_cast<double>(dim_x);
-	const double step_y = (max_y - min_y) / static_cast<double>(dim_y);
-	const double step_z = (max_z - min_z) / static_cast<double>(dim_z);*/
 
 	const double step = 1.0 / static_cast<double>(divisor);
 
@@ -314,8 +448,7 @@ std::vector<double> iterate_voxels(
 	const int range_k = (end_k - start_k) * divisor;
 
 	std::vector<double> result(range_i * range_j * range_k);
-	//result.reserve(range_i * range_j * range_k);
-
+	std::vector<Eigen::Vector3d> result_points(range_i * range_j * range_k, Eigen::Vector3d::Zero());
 #pragma omp parallel for //num_threads(16)
 	for (int i = 0; i < range_i; ++i) {
 		if (i == 0)
@@ -323,26 +456,47 @@ std::vector<double> iterate_voxels(
 		for (int j = 0; j < range_j; ++j) {
 			for (int k = 0; k < range_k; ++k) {
 				const Eigen::Vector3d x(start_x + i * step, start_y + j * step, start_z + k * step);
-				const double res = implicit_F(x, rotations, points);
+				double res;
+				if(scale)
+					res = implicit_F_scaled(x, rotations, points, scales);
+				else
+					res = implicit_F(x, rotations, points);
 				result[i * range_j * range_k + j * range_k + k] = res;
-				//std::cout << x << res << "\n";
+				if (res < 0.0)
+					result_points[i * range_j * range_k + j * range_k + k] = x;
 			}
-			//std::cout << i + 1 << "/" << range_i << " " << j + 1 << "/" << range_j << "\n";
 		}
 		std::cout << i + 1 << "/" << range_i << "\n\n";
 	}
-
+	std::cout << "Grid dimensions: " << range_i << " " << range_j << " " << range_k << "\n";
+	write_point_cloud("C:/Users/migon/Documents/Capturing Reality/Exercise 4/achteck-new2-part1", result_points, "point_cloud_grid");
 	return result;
 }
 
-void write_point_cloud(const char* path, const std::vector<Eigen::Vector3d> vertices) {
+void write_point_cloud(const char* path, const std::vector<Eigen::Vector3d> vertices, char* filename) {
 	std::vector<Vertex_pc> vertices_pc;
 	vertices_pc.reserve(vertices.size());
 	for (auto v : vertices) {
 		vertices_pc.push_back(Vertex_pc{ static_cast<float>(v(0)), static_cast<float>(v(1)), static_cast<float>(v(2)) });
 	}
-	std::ofstream pc_output(std::string(path) + "\\point_cloud.ply", std::ios_base::binary);
+	if (!filename)
+		filename = "point_cloud";
+	std::ofstream pc_output(std::string(path) + "\\" + filename + ".ply", std::ios_base::binary);
 	write_ply_point_cloud(pc_output, vertices_pc);
+	std::cout << "Wrote point cloud\n";
+}
+
+void write_point_cloud_normals(const char* path, const std::vector<Eigen::Vector3d> vertices, const std::vector<Eigen::Vector3d> normals, char* filename) {
+	std::vector<Vertex_pc_n> vertices_pc_n;
+	vertices_pc_n.reserve(vertices.size());
+	for (int i = 0; i < vertices.size(); ++i) {
+		vertices_pc_n.push_back(Vertex_pc_n{ static_cast<float>(vertices[i](0)), static_cast<float>(vertices[i](1)), static_cast<float>(vertices[i](2)),
+			static_cast<float>(normals[i](0)), static_cast<float>(normals[i](1)), static_cast<float>(normals[i](2)) });
+	}
+	if (!filename)
+		filename = "point_cloud";
+	std::ofstream pc_output(std::string(path) + "\\" + filename + ".ply", std::ios_base::binary);
+	write_ply_point_cloud_normals(pc_output, vertices_pc_n);
 	std::cout << "Wrote point cloud\n";
 }
 
@@ -364,35 +518,26 @@ int main(int argc, const char **argv)
 {
 	const char* path = argv[1];
 	const int num_images = std::stoi(std::string(argv[2]));
+	bool scale, hoppe;
+	if (argc > 3)
+		scale = std::stoi(argv[3]);
+	if (argc > 4)
+		hoppe = std::stoi(argv[4]);
 	const std::vector<camera_info> infos = load_camera_infos(path, num_images);
 	const std::vector<image_f> images = load_depth_images(path, num_images);
 	std::cout << "Loaded depth images\n";
 	const int img_size = images[0].size();
 
-	const std::pair<std::vector<Eigen::Vector3d>, std::vector<Eigen::Vector3d>> result = create_3d_points(images.data(), infos.data(), num_images, num_images * img_size);
-	std::cout << "Created points and normals\n";
-	const std::vector<Eigen::Vector3d> points = result.first;
-	write_point_cloud(path, points);
-	double min_x, min_y, min_z;
-	min_x = min_y = min_z = 1000000000.0;
-	double max_x, max_y, max_z;
-	max_x = max_y = max_z = -1000000000.0;
-	for (int i = 0; i < points.size(); ++i) {
-		const Eigen::Vector3d test = points[i];
-		min_x = test(0) < min_x ? test(0) : min_x;
-		min_y = test(1) < min_y ? test(1) : min_y;
-		min_z = test(2) < min_z ? test(2) : min_z;
-		max_x = test(0) > max_x ? test(0) : max_x;
-		max_y = test(1) > max_y ? test(1) : max_y;
-		max_z = test(2) > max_z ? test(2) : max_z;
-	}
-	std::cout << min_x << " " << min_y << " " << min_z << "\n" << max_x << " " << max_y << " " << max_z << "\n";
+	std::vector<Eigen::Vector3d> normals;
+	std::vector<double> scales;
+	const std::vector<Eigen::Vector3d> points = create_3d_points(images.data(), infos.data(), num_images, num_images * img_size, normals, scales, scale, hoppe);
+	std::cout << "Created points\n";
 
-	const std::vector<Eigen::Vector3d> normals = result.second;
-
+	if (hoppe)
+		get_normals_unstructured(points, normals);
+	write_point_cloud_normals(path, points, normals);
 	const std::vector<Eigen::Matrix3d> matrices = get_rotation_matrices(normals);
-	//const std::vector<double> voxel_grid = iterate_voxels(points, matrices, -2.0, -4.0, 6.0, 2.0, 2.0, 10.0, 2);
-	const std::vector<double> voxel_grid = iterate_voxels(points, matrices, min_x, min_y, min_z, max_x, max_y, max_z, 2);
+	const std::vector<double> voxel_grid = iterate_voxels(points, matrices, scales, -2.0, -4.0, 6.0, 2.0, 2.0, 10.0, 64, scale);
 	write_grid_file(path, voxel_grid);
 
 	return EXIT_SUCCESS;
